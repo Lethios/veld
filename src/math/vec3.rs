@@ -100,3 +100,14 @@ impl Div<f32> for Vec3 {
         }
     }
 }
+
+impl Neg for Vec3 {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        Self {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
+    }
+}
