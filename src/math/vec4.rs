@@ -10,7 +10,7 @@ pub struct Vec4 {
 }
 
 impl Vec4 {
-    /// Create a new Vec4.
+    /// Creates a new Vec4.
     pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self { x, y, z, w }
     }
