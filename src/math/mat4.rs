@@ -104,7 +104,7 @@ impl Mat4 {
     /// Returns an orthographic projection matrix.
     ///
     /// Uses OpenGL NDC conventions.
-    pub fn orthographic(left: f32, right: f32, top: f32, bottom: f32, near: f32, far: f32) -> Self {
+    pub fn orthographic(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Self {
         Self::new(
             Vec4::new(2.0 / (right - left), 0.0, 0.0, 0.0),
             Vec4::new(0.0, 2.0 / (top - bottom), 0.0, 0.0),
