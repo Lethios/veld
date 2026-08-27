@@ -1,3 +1,4 @@
+pub mod canvas;
 pub mod math;
 
 pub use math::Mat4;
