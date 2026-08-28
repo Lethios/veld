@@ -14,7 +14,7 @@ impl Canvas {
         Self {
             width,
             height,
-            color_buffer: vec![0u32; (width * height) as usize],
+            color_buffer: vec![0xFF000000; (width * height) as usize],
             depth_buffer: vec![f32::INFINITY; (width * height) as usize],
         }
     }
@@ -27,6 +27,10 @@ impl Canvas {
     /// Returns the height of the Canvas in pixels.
     pub fn height(&self) -> u32 {
         self.height
+    }
+
+    pub fn pixels(&self) -> &[u32] {
+        &self.color_buffer
     }
 
     /// Clears `color_buffer` by filling every pixel with `color`.
@@ -43,7 +47,7 @@ impl Canvas {
         }
     }
 
-    /// Plots a single pixel at the given coordinates (x, y).
+    /// Plots a single pixel at the given coordinates `(x, y)`.
     /// Coordinates are rounded to the nearest integer.
     /// Pixels outside the Canvas bounds are discarded.
     pub fn set_pixel(&mut self, x: f32, y: f32, color: u32) {
@@ -53,7 +57,7 @@ impl Canvas {
         self.color_buffer[i] = color;
     }
 
-    /// Converts cartesian coordinates (x, y) to a buffer index.
+    /// Converts cartesian coordinates `(x, y)` to a buffer index.
     /// Returns None if out of bounds.
     fn index(&self, x: i32, y: i32) -> Option<usize> {
         let offset_width = (self.width as i32 / 2) + x;
@@ -70,130 +74,99 @@ impl Canvas {
         Some((offset_height * self.width as i32 + offset_width) as usize)
     }
 
-    /// Draws a line between two points (x1, y1) and (x2, y2).
-    /// Uses [Bresenham's line algorithm](htps://en.wikipedia.org/wiki/Bresenham's_line_algorithm).
+    /// Draws a line between two points `(x1, y1)` and `(x2, y2)`.
+    /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, color: u32) {
-        let x1 = x1.round() as i32;
-        let y1 = y1.round() as i32;
+        let mut x1 = x1.round() as i32;
+        let mut y1 = y1.round() as i32;
         let x2 = x2.round() as i32;
         let y2 = y2.round() as i32;
 
-        if (y2 - y1).abs() < (x2 - x1).abs() {
-            if x1 > x2 {
-                self.draw_line_low(x2, y2, x1, y1, color);
-            } else {
-                self.draw_line_low(x1, y1, x2, y2, color);
+        let dx = (x2 - x1).abs();
+        let x_step = if x1 < x2 { 1 } else { -1 };
+
+        let dy = -(y2 - y1).abs();
+        let y_step = if y1 < y2 { 1 } else { -1 };
+
+        let mut err = dx + dy;
+
+        loop {
+            self.set_pixel(x1 as f32, y1 as f32, color);
+
+            if x1 == x2 && y1 == y2 {
+                break;
             }
-        } else if y1 > y2 {
-            self.draw_line_high(x2, y2, x1, y1, color);
-        } else {
-            self.draw_line_high(x1, y1, x2, y2, color);
-        }
-    }
-
-    /// Handles lines where |dx| > |dy|.
-    fn draw_line_low(&mut self, x1: i32, y1: i32, x2: i32, y2: i32, color: u32) {
-        let dx = x2 - x1;
-        let mut dy = y2 - y1;
-        let mut y_step = 1;
-
-        if dy < 0 {
-            y_step = -1;
-            dy = -dy;
-        }
-
-        let mut err = (2 * dy) - dx;
-        let mut y_curr = y1;
-
-        for x_curr in x1..x2 {
-            self.set_pixel(x_curr as f32, y_curr as f32, color);
-
-            if err > 0 {
-                y_curr += y_step;
-                err += 2 * (dy - dx);
-            } else {
-                err += 2 * dy;
+            if 2 * err >= dy {
+                err += dy;
+                x1 += x_step;
+            }
+            if 2 * err <= dx {
+                err += dx;
+                y1 += y_step;
             }
         }
     }
 
-    /// Handles lines where |dy| >= |dx|.
-    fn draw_line_high(&mut self, x1: i32, y1: i32, x2: i32, y2: i32, color: u32) {
-        let mut dx = x2 - x1;
-        let dy = y2 - y1;
-        let mut x_step = 1;
-
-        if dx < 0 {
-            x_step = -1;
-            dx = -dx;
-        }
-
-        let mut err = (2 * dx) - dy;
-        let mut x_curr = x1;
-
-        for y_curr in y1..y2 {
-            self.set_pixel(x_curr as f32, y_curr as f32, color);
-
-            if err > 0 {
-                x_curr += x_step;
-                err += 2 * (dx - dy);
-            } else {
-                err += 2 * dx;
-            }
-        }
-    }
-
-    /// Draws the outline of a circle centered at (x1, y1).
+    /// Draws an outline of a circle with the given radius, centered at `(x1, y1)`.
+    /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_circle(&mut self, x1: f32, y1: f32, radius: f32, color: u32) {
-        let x1 = x1.round();
-        let y1 = y1.round();
+        let x1 = x1.round() as i32;
+        let y1 = y1.round() as i32;
         let radius = radius.round() as i32;
 
-        let mut x_curr = 0;
-        let mut y_curr = -radius;
-        let mut err = -radius;
+        let mut x = -radius;
+        let mut y = 0;
+        let mut err = 2 - 2 * radius;
 
-        while x_curr < -y_curr {
-            for (i, j) in [(1.0, 1.0), (1.0, -1.0), (-1.0, 1.0), (-1.0, -1.0)] {
-                self.set_pixel(x1 + (i * x_curr as f32), y1 + (j * y_curr as f32), color);
-                self.set_pixel(x1 + (j * y_curr as f32), y1 + (i * x_curr as f32), color);
+        while x <= 0 {
+            self.set_pixel((x1 - x) as f32, (y1 + y) as f32, color);
+            self.set_pixel((x1 - y) as f32, (y1 - x) as f32, color);
+            self.set_pixel((x1 + x) as f32, (y1 - y) as f32, color);
+            self.set_pixel((x1 + y) as f32, (y1 + x) as f32, color);
+
+            let prev_err = err;
+
+            if prev_err <= y {
+                y += 1;
+                err += 2 * y + 1;
             }
-
-            if err > 0 {
-                y_curr += 1;
-                err += 2 * (x_curr + y_curr) + 1;
-            } else {
-                err += 2 * x_curr + 1;
+            if (prev_err > x) || (err > y) {
+                x += 1;
+                err += 2 * x + 1;
             }
-
-            x_curr += 1;
         }
     }
 
-    /// Draws a filled circle centered at (x1, y1).
+    /// Draws a filled circle with the given radius, centered at `(x1, y1)`.
     pub fn draw_circle_filled(&mut self, x1: f32, y1: f32, radius: f32, color: u32) {
-        let x1 = x1.round();
-        let y1 = y1.round();
+        let x1 = x1.round() as i32;
+        let y1 = y1.round() as i32;
         let radius = radius.round() as i32;
 
-        let mut x_curr = 0;
-        let mut y_curr = -radius;
-        let mut err = -radius;
+        let mut x = -radius;
+        let mut y = 0;
+        let mut err = 2 - 2 * radius;
 
-        while x_curr < -y_curr {
-            for i in y_curr..=-y_curr {
-                self.set_pixel(x1 + x_curr as f32, y1 + i as f32, color);
-                self.set_pixel(x1 - x_curr as f32, y1 + i as f32, color);
+        while x <= 0 {
+            for x_curr in x1 - x..=x1 + x {
+                self.set_pixel(x_curr as f32, (y1 + y) as f32, color);
+                self.set_pixel(x_curr as f32, (y1 - y) as f32, color);
+            }
+            for x_curr in x1 - y..=x1 + y {
+                self.set_pixel(x_curr as f32, (y1 + x) as f32, color);
+                self.set_pixel(x_curr as f32, (y1 - x) as f32, color);
             }
 
-            if err > 0 {
-                y_curr += 1;
-                err += 2 * (x_curr + y_curr) + 1;
-            } else {
-                err += 2 * x_curr + 1;
-            }
+            let prev_err = err;
 
-            x_curr += 1;
+            if prev_err <= y {
+                y += 1;
+                err += 2 * y + 1;
+            }
+            if (prev_err > x) || (err > y) {
+                x += 1;
+                err += 2 * x + 1;
+            }
         }
     }
 }
