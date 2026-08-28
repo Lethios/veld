@@ -1,3 +1,4 @@
+/// A 2-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
     width: u32,
     height: u32,
@@ -8,7 +9,7 @@ pub struct Canvas {
 impl Canvas {
     /// Creates a new Canvas with the given dimensions.
     /// `color_buffer` is initialized with all pixels set to black, while
-    /// `depth_buffer` is initialized with all values set to infinity
+    /// `depth_buffer` is initialized with all values set to infinity.
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
@@ -16,6 +17,16 @@ impl Canvas {
             color_buffer: vec![0u32; (width * height) as usize],
             depth_buffer: vec![f32::INFINITY; (width * height) as usize],
         }
+    }
+
+    /// Returns the width of the Canvas in pixels.
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    /// Returns the height of the Canvas in pixels.
+    pub fn height(&self) -> u32 {
+        self.height
     }
 
     /// Clears `color_buffer` by filling every pixel with `color`.
@@ -32,9 +43,8 @@ impl Canvas {
         }
     }
 
-    /// Plots a single pixel at the given cartesian coordinates (x, y).
+    /// Plots a single pixel at the given coordinates (x, y).
     /// Coordinates are rounded to the nearest integer.
-    /// The origin (0, 0) is at the center of Canvas.
     /// Pixels outside the Canvas bounds are discarded.
     pub fn set_pixel(&mut self, x: f32, y: f32, color: u32) {
         let Some(i) = self.index(x.round() as i32, y.round() as i32) else {
@@ -60,9 +70,8 @@ impl Canvas {
         Some((offset_height * self.width as i32 + offset_width) as usize)
     }
 
-    /// Draws a line between two cartesian coordinates (x1, y1) and (x2, y2)
+    /// Draws a line between two points (x1, y1) and (x2, y2).
     /// Uses [Bresenham's line algorithm](htps://en.wikipedia.org/wiki/Bresenham's_line_algorithm).
-    /// Coordinates are rounded to nearest integer before rasterization.
     pub fn draw_line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, color: u32) {
         let x1 = x1.round() as i32;
         let y1 = y1.round() as i32;
@@ -134,7 +143,10 @@ impl Canvas {
         }
     }
 
+    /// Draws the outline of a circle centered at (x1, y1).
     pub fn draw_circle(&mut self, x1: f32, y1: f32, radius: f32, color: u32) {
+        let x1 = x1.round();
+        let y1 = y1.round();
         let radius = radius.round() as i32;
 
         let mut x_curr = 0;
@@ -145,6 +157,33 @@ impl Canvas {
             for (i, j) in [(1.0, 1.0), (1.0, -1.0), (-1.0, 1.0), (-1.0, -1.0)] {
                 self.set_pixel(x1 + (i * x_curr as f32), y1 + (j * y_curr as f32), color);
                 self.set_pixel(x1 + (j * y_curr as f32), y1 + (i * x_curr as f32), color);
+            }
+
+            if err > 0 {
+                y_curr += 1;
+                err += 2 * (x_curr + y_curr) + 1;
+            } else {
+                err += 2 * x_curr + 1;
+            }
+
+            x_curr += 1;
+        }
+    }
+
+    /// Draws a filled circle centered at (x1, y1).
+    pub fn draw_circle_filled(&mut self, x1: f32, y1: f32, radius: f32, color: u32) {
+        let x1 = x1.round();
+        let y1 = y1.round();
+        let radius = radius.round() as i32;
+
+        let mut x_curr = 0;
+        let mut y_curr = -radius;
+        let mut err = -radius;
+
+        while x_curr < -y_curr {
+            for i in y_curr..=-y_curr {
+                self.set_pixel(x1 + x_curr as f32, y1 + i as f32, color);
+                self.set_pixel(x1 - x_curr as f32, y1 + i as f32, color);
             }
 
             if err > 0 {
