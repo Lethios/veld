@@ -32,7 +32,7 @@ impl Mat4 {
     }
 
     /// Returns a scaling matrix.
-    pub fn scale(v: Vec3) -> Mat4 {
+    pub fn scale(v: Vec3) -> Self {
         Self::new(
             Vec4::new(v.x, 0.0, 0.0, 0.0),
             Vec4::new(0.0, v.y, 0.0, 0.0),
@@ -42,7 +42,7 @@ impl Mat4 {
     }
 
     /// Returns a translation matrix.
-    pub fn translate(v: Vec3) -> Mat4 {
+    pub fn translate(v: Vec3) -> Self {
         Self::new(
             Vec4::new(1.0, 0.0, 0.0, 0.0),
             Vec4::new(0.0, 1.0, 0.0, 0.0),
@@ -54,7 +54,7 @@ impl Mat4 {
     /// Returns a rotation matrix around the X-axis.
     ///
     /// `angle` is in radians.
-    pub fn rotate_x(angle: f32) -> Mat4 {
+    pub fn rotate_x(angle: f32) -> Self {
         Self::new(
             Vec4::new(1.0, 0.0, 0.0, 0.0),
             Vec4::new(0.0, angle.cos(), angle.sin(), 0.0),
@@ -66,7 +66,7 @@ impl Mat4 {
     /// Returns a rotation matrix around the Y-axis.
     ///
     /// `angle` is in radians.
-    pub fn rotate_y(angle: f32) -> Mat4 {
+    pub fn rotate_y(angle: f32) -> Self {
         Self::new(
             Vec4::new(angle.cos(), 0.0, -angle.sin(), 0.0),
             Vec4::new(0.0, 1.0, 0.0, 0.0),
@@ -78,7 +78,7 @@ impl Mat4 {
     /// Returns a rotation matrix around the Z-axis.
     ///
     /// `angle` is in radians.
-    pub fn rotate_z(angle: f32) -> Mat4 {
+    pub fn rotate_z(angle: f32) -> Self {
         Self::new(
             Vec4::new(angle.cos(), angle.sin(), 0.0, 0.0),
             Vec4::new(-angle.sin(), angle.cos(), 0.0, 0.0),
@@ -119,7 +119,7 @@ impl Mat4 {
     }
 
     /// Returns the transpose of `self`.
-    pub fn transpose(&self) -> Mat4 {
+    pub fn transpose(&self) -> Self {
         Mat4::new(
             Vec4::new(self.x_axis.x, self.y_axis.x, self.z_axis.x, self.w_axis.x),
             Vec4::new(self.x_axis.y, self.y_axis.y, self.z_axis.y, self.w_axis.y),

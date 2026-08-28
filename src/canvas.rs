@@ -14,7 +14,7 @@ impl Canvas {
         Self {
             width,
             height,
-            color_buffer: vec![0xFF000000; (width * height) as usize],
+            color_buffer: vec![0x00000000; (width * height) as usize],
             depth_buffer: vec![f32::INFINITY; (width * height) as usize],
         }
     }
@@ -51,17 +51,16 @@ impl Canvas {
     /// Coordinates are rounded to the nearest integer.
     /// Pixels outside the Canvas bounds are discarded.
     pub fn set_pixel(&mut self, x: f32, y: f32, color: u32) {
-        let Some(i) = self.index(x.round() as i32, y.round() as i32) else {
-            return;
-        };
-        self.color_buffer[i] = color;
+        if let Some(i) = self.index(x, y) {
+            self.color_buffer[i] = color;
+        }
     }
 
     /// Converts cartesian coordinates `(x, y)` to a buffer index.
-    /// Returns None if out of bounds.
-    fn index(&self, x: i32, y: i32) -> Option<usize> {
-        let offset_width = (self.width as i32 / 2) + x;
-        let offset_height = (self.height as i32 / 2) - y;
+    /// Returns `None` if out of bounds.
+    fn index(&self, x: f32, y: f32) -> Option<usize> {
+        let offset_width = self.width as i32 / 2 + x.round() as i32;
+        let offset_height = self.height as i32 / 2 - y.round() as i32;
 
         if offset_width < 0
             || offset_width >= self.width as i32
