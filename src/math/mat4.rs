@@ -1,4 +1,4 @@
-use crate::{Vec3, Vec4};
+use crate::math::{Vec3, Vec4};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 /// A 4x4 matrix.

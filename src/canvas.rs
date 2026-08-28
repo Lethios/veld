@@ -7,8 +7,8 @@ pub struct Canvas {
 
 impl Canvas {
     /// Creates a new Canvas with the given dimensions.
-    /// `color_buffer` is initialized with all pixels set to black.
-    /// `depth_buffer` is initialized with all values set to infinity.
+    /// `color_buffer` is initialized with all pixels set to black, while
+    /// `depth_buffer` is initialized with all values set to infinity
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
@@ -60,7 +60,7 @@ impl Canvas {
     }
 
     /// Draws a line between two cartesian coordinates (x1, y1) and (x2, y2)
-    /// Uses Bresenham's line algorithm
+    /// Uses [Bresenham's line algorithm](htps://en.wikipedia.org/wiki/Bresenham's_line_algorithm).
     /// Coordinates are rounded to nearest integer before rasterization.
     pub fn draw_line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, color: u32) {
         let x1 = x1.round() as i32;

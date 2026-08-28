@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 
-
 [lints.clippy]
 # Don't Panic
 string_slice = "warn"
