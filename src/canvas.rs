@@ -1,3 +1,5 @@
+use crate::Vec2;
+
 /// A 2-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
     width: u32,
@@ -29,6 +31,7 @@ impl Canvas {
         self.height
     }
 
+    /// Returns a reference to `color_buffer`.
     pub fn pixels(&self) -> &[u32] {
         &self.color_buffer
     }
@@ -77,13 +80,13 @@ impl Canvas {
         }
     }
 
-    /// Draws a line between two points `(x1, y1)` and `(x2, y2)`.
+    /// Draws a line from `start` to `end`.
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
-    pub fn draw_line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, color: u32) {
-        let mut x1 = x1.round() as i32;
-        let mut y1 = y1.round() as i32;
-        let x2 = x2.round() as i32;
-        let y2 = y2.round() as i32;
+    pub fn draw_line(&mut self, start: Vec2, end: Vec2, color: u32) {
+        let mut x1 = start.x.round() as i32;
+        let mut y1 = start.y.round() as i32;
+        let x2 = end.x.round() as i32;
+        let y2 = end.y.round() as i32;
 
         let dx = (x2 - x1).abs();
         let x_step = if x1 < x2 { 1 } else { -1 };
@@ -110,11 +113,11 @@ impl Canvas {
         }
     }
 
-    /// Draws an outline of a circle with the given radius, centered at `(x1, y1)`.
+    /// Draws an outline of a circle with the given `radius`, centered at `center`.
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
-    pub fn draw_circle(&mut self, x1: f32, y1: f32, radius: f32, color: u32) {
-        let x1 = x1.round() as i32;
-        let y1 = y1.round() as i32;
+    pub fn draw_circle(&mut self, center: Vec2, radius: f32, color: u32) {
+        let x1 = center.x.round() as i32;
+        let y1 = center.y.round() as i32;
         let radius = radius.round() as i32;
 
         let mut x = -radius;
@@ -140,10 +143,10 @@ impl Canvas {
         }
     }
 
-    /// Draws a filled circle with the given radius, centered at `(x1, y1)`.
-    pub fn draw_circle_filled(&mut self, x1: f32, y1: f32, radius: f32, color: u32) {
-        let x1 = x1.round() as i32;
-        let y1 = y1.round() as i32;
+    /// Draws a filled circle with the given `radius`, centered at `center`.
+    pub fn draw_circle_filled(&mut self, center: Vec2, radius: f32, color: u32) {
+        let x1 = center.x.round() as i32;
+        let y1 = center.y.round() as i32;
         let radius = radius.round() as i32;
 
         let mut x = -radius;
