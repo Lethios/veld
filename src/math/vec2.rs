@@ -8,13 +8,13 @@ pub struct Vec2 {
 }
 
 impl Vec2 {
-    /// Creates a new Vec2 with all components set to 0.0.
+    /// A `Vec2` with all components set to 0.0.
     pub const ZERO: Self = Self::new(0.0, 0.0);
 
-    /// Creates a new Vec2 with all components set to 1.0.
+    /// A `Vec2` with all components set to 1.0.
     pub const ONE: Self = Self::new(1.0, 1.0);
 
-    /// Creates a new Vec2.
+    /// Creates a new `Vec2`.
     pub const fn new(x: f32, y: f32) -> Self {
         Self { x, y }
     }

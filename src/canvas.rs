@@ -51,26 +51,30 @@ impl Canvas {
     /// Coordinates are rounded to the nearest integer.
     /// Pixels outside the Canvas bounds are discarded.
     pub fn set_pixel(&mut self, x: f32, y: f32, color: u32) {
-        if let Some(i) = self.index(x, y) {
-            self.color_buffer[i] = color;
+        let x = x.round() as i32;
+        let y = y.round() as i32;
+
+        let offset_width = self.width as i32 / 2 + x;
+        let offset_height = self.height as i32 / 2 - y;
+
+        let index = offset_height * self.width as i32 + offset_width;
+
+        if let Some(value) = self.color_buffer.get_mut(index as usize) {
+            *value = color;
         }
     }
 
-    /// Converts cartesian coordinates `(x, y)` to a buffer index.
-    /// Returns `None` if out of bounds.
-    fn index(&self, x: f32, y: f32) -> Option<usize> {
-        let offset_width = self.width as i32 / 2 + x.round() as i32;
-        let offset_height = self.height as i32 / 2 - y.round() as i32;
+    /// Plots a single pixel at the given coordinates `(x, y)`.
+    /// Pixels outside the Canvas bounds are discarded.
+    fn set_pixel_i32(&mut self, x: i32, y: i32, color: u32) {
+        let offset_width = self.width as i32 / 2 + x;
+        let offset_height = self.height as i32 / 2 - y;
 
-        if offset_width < 0
-            || offset_width >= self.width as i32
-            || offset_height < 0
-            || offset_height >= self.height as i32
-        {
-            return None;
+        let index = offset_height * self.width as i32 + offset_width;
+
+        if let Some(value) = self.color_buffer.get_mut(index as usize) {
+            *value = color;
         }
-
-        Some((offset_height * self.width as i32 + offset_width) as usize)
     }
 
     /// Draws a line between two points `(x1, y1)` and `(x2, y2)`.
@@ -90,7 +94,7 @@ impl Canvas {
         let mut err = dx + dy;
 
         loop {
-            self.set_pixel(x1 as f32, y1 as f32, color);
+            self.set_pixel_i32(x1, y1, color);
 
             if x1 == x2 && y1 == y2 {
                 break;
@@ -118,10 +122,10 @@ impl Canvas {
         let mut err = 2 - 2 * radius;
 
         while x <= 0 {
-            self.set_pixel((x1 - x) as f32, (y1 + y) as f32, color);
-            self.set_pixel((x1 - y) as f32, (y1 - x) as f32, color);
-            self.set_pixel((x1 + x) as f32, (y1 - y) as f32, color);
-            self.set_pixel((x1 + y) as f32, (y1 + x) as f32, color);
+            self.set_pixel_i32(x1 - x, y1 + y, color);
+            self.set_pixel_i32(x1 - y, y1 - x, color);
+            self.set_pixel_i32(x1 + x, y1 - y, color);
+            self.set_pixel_i32(x1 + y, y1 + x, color);
 
             let prev_err = err;
 
@@ -148,12 +152,12 @@ impl Canvas {
 
         while x <= 0 {
             for x_curr in x1 - x..=x1 + x {
-                self.set_pixel(x_curr as f32, (y1 + y) as f32, color);
-                self.set_pixel(x_curr as f32, (y1 - y) as f32, color);
+                self.set_pixel_i32(x_curr, y1 + y, color);
+                self.set_pixel_i32(x_curr, y1 - y, color);
             }
             for x_curr in x1 - y..=x1 + y {
-                self.set_pixel(x_curr as f32, (y1 + x) as f32, color);
-                self.set_pixel(x_curr as f32, (y1 - x) as f32, color);
+                self.set_pixel_i32(x_curr, y1 + x, color);
+                self.set_pixel_i32(x_curr, y1 - x, color);
             }
 
             let prev_err = err;
