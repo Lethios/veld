@@ -157,81 +157,10 @@ impl Mul<Mat4> for Mat4 {
     type Output = Self;
     fn mul(self, rhs: Mat4) -> Self::Output {
         Self {
-            x_axis: Vec4::new(
-                self.x_axis.x * rhs.x_axis.x
-                    + self.y_axis.x * rhs.x_axis.y
-                    + self.z_axis.x * rhs.x_axis.z
-                    + self.w_axis.x * rhs.x_axis.w,
-                self.x_axis.y * rhs.x_axis.x
-                    + self.y_axis.y * rhs.x_axis.y
-                    + self.z_axis.y * rhs.x_axis.z
-                    + self.w_axis.y * rhs.x_axis.w,
-                self.x_axis.z * rhs.x_axis.x
-                    + self.y_axis.z * rhs.x_axis.y
-                    + self.z_axis.z * rhs.x_axis.z
-                    + self.w_axis.z * rhs.x_axis.w,
-                self.x_axis.w * rhs.x_axis.x
-                    + self.y_axis.w * rhs.x_axis.y
-                    + self.z_axis.w * rhs.x_axis.z
-                    + self.w_axis.w * rhs.x_axis.w,
-            ),
-
-            y_axis: Vec4::new(
-                self.x_axis.x * rhs.y_axis.x
-                    + self.y_axis.x * rhs.y_axis.y
-                    + self.z_axis.x * rhs.y_axis.z
-                    + self.w_axis.x * rhs.y_axis.w,
-                self.x_axis.y * rhs.y_axis.x
-                    + self.y_axis.y * rhs.y_axis.y
-                    + self.z_axis.y * rhs.y_axis.z
-                    + self.w_axis.y * rhs.y_axis.w,
-                self.x_axis.z * rhs.y_axis.x
-                    + self.y_axis.z * rhs.y_axis.y
-                    + self.z_axis.z * rhs.y_axis.z
-                    + self.w_axis.z * rhs.y_axis.w,
-                self.x_axis.w * rhs.y_axis.x
-                    + self.y_axis.w * rhs.y_axis.y
-                    + self.z_axis.w * rhs.y_axis.z
-                    + self.w_axis.w * rhs.y_axis.w,
-            ),
-
-            z_axis: Vec4::new(
-                self.x_axis.x * rhs.z_axis.x
-                    + self.y_axis.x * rhs.z_axis.y
-                    + self.z_axis.x * rhs.z_axis.z
-                    + self.w_axis.x * rhs.z_axis.w,
-                self.x_axis.y * rhs.z_axis.x
-                    + self.y_axis.y * rhs.z_axis.y
-                    + self.z_axis.y * rhs.z_axis.z
-                    + self.w_axis.y * rhs.z_axis.w,
-                self.x_axis.z * rhs.z_axis.x
-                    + self.y_axis.z * rhs.z_axis.y
-                    + self.z_axis.z * rhs.z_axis.z
-                    + self.w_axis.z * rhs.z_axis.w,
-                self.x_axis.w * rhs.z_axis.x
-                    + self.y_axis.w * rhs.z_axis.y
-                    + self.z_axis.w * rhs.z_axis.z
-                    + self.w_axis.w * rhs.z_axis.w,
-            ),
-
-            w_axis: Vec4::new(
-                self.x_axis.x * rhs.w_axis.x
-                    + self.y_axis.x * rhs.w_axis.y
-                    + self.z_axis.x * rhs.w_axis.z
-                    + self.w_axis.x * rhs.w_axis.w,
-                self.x_axis.y * rhs.w_axis.x
-                    + self.y_axis.y * rhs.w_axis.y
-                    + self.z_axis.y * rhs.w_axis.z
-                    + self.w_axis.y * rhs.w_axis.w,
-                self.x_axis.z * rhs.w_axis.x
-                    + self.y_axis.z * rhs.w_axis.y
-                    + self.z_axis.z * rhs.w_axis.z
-                    + self.w_axis.z * rhs.w_axis.w,
-                self.x_axis.w * rhs.w_axis.x
-                    + self.y_axis.w * rhs.w_axis.y
-                    + self.z_axis.w * rhs.w_axis.z
-                    + self.w_axis.w * rhs.w_axis.w,
-            ),
+            x_axis: self * rhs.x_axis,
+            y_axis: self * rhs.y_axis,
+            z_axis: self * rhs.z_axis,
+            w_axis: self * rhs.w_axis,
         }
     }
 }
