@@ -10,8 +10,14 @@ pub struct Vec4 {
 }
 
 impl Vec4 {
+    /// Creates a new Vec4 with all components set to 0.0.
+    pub const ZERO: Self = Self::new(0.0, 0.0, 0.0, 0.0);
+
+    /// Creates a new Vec4 with all components set to 1.0.
+    pub const ONE: Self = Self::new(1.0, 1.0, 1.0, 1.0);
+
     /// Creates a new Vec4.
-    pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+    pub const fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self { x, y, z, w }
     }
 
