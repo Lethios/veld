@@ -65,18 +65,6 @@ impl Sub for Vec3 {
     }
 }
 
-impl Mul for Vec3 {
-    type Output = Self;
-
-    fn mul(self, rhs: Vec3) -> Self::Output {
-        Self {
-            x: self.x * rhs.x,
-            y: self.y * rhs.y,
-            z: self.z * rhs.z,
-        }
-    }
-}
-
 impl Mul<f32> for Vec3 {
     type Output = Self;
 
@@ -85,18 +73,6 @@ impl Mul<f32> for Vec3 {
             x: self.x * rhs,
             y: self.y * rhs,
             z: self.z * rhs,
-        }
-    }
-}
-
-impl Div for Vec3 {
-    type Output = Self;
-
-    fn div(self, rhs: Vec3) -> Self::Output {
-        Self {
-            x: self.x / rhs.x,
-            y: self.y / rhs.y,
-            z: self.z / rhs.z,
         }
     }
 }

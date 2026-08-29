@@ -14,7 +14,7 @@ impl Canvas {
         Self {
             width,
             height,
-            color_buffer: vec![0x00000000; (width * height) as usize],
+            color_buffer: vec![0x00000000; (width as usize).checked_mul(height as usize).unwrap()],
             depth_buffer: vec![f32::INFINITY; (width * height) as usize],
         }
     }
