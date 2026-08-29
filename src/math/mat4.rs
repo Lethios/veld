@@ -129,8 +129,9 @@ impl Mat4 {
     }
 }
 
-impl Add<Mat4> for Mat4 {
+impl Add for Mat4 {
     type Output = Self;
+
     fn add(self, rhs: Mat4) -> Self::Output {
         Self {
             x_axis: self.x_axis + rhs.x_axis,
@@ -141,8 +142,9 @@ impl Add<Mat4> for Mat4 {
     }
 }
 
-impl Sub<Mat4> for Mat4 {
+impl Sub for Mat4 {
     type Output = Self;
+
     fn sub(self, rhs: Mat4) -> Self::Output {
         Self {
             x_axis: self.x_axis - rhs.x_axis,
@@ -153,8 +155,9 @@ impl Sub<Mat4> for Mat4 {
     }
 }
 
-impl Mul<Mat4> for Mat4 {
+impl Mul for Mat4 {
     type Output = Self;
+
     fn mul(self, rhs: Mat4) -> Self::Output {
         Self {
             x_axis: self * rhs.x_axis,
@@ -167,6 +170,7 @@ impl Mul<Mat4> for Mat4 {
 
 impl Mul<Vec4> for Mat4 {
     type Output = Vec4;
+
     fn mul(self, rhs: Vec4) -> Self::Output {
         Vec4::new(
             self.x_axis.x * rhs.x
@@ -191,6 +195,7 @@ impl Mul<Vec4> for Mat4 {
 
 impl Mul<f32> for Mat4 {
     type Output = Self;
+
     fn mul(self, rhs: f32) -> Self::Output {
         Self {
             x_axis: self.x_axis * rhs,
@@ -203,6 +208,7 @@ impl Mul<f32> for Mat4 {
 
 impl Div<f32> for Mat4 {
     type Output = Self;
+
     fn div(self, rhs: f32) -> Self::Output {
         Self {
             x_axis: self.x_axis / rhs,
@@ -215,6 +221,7 @@ impl Div<f32> for Mat4 {
 
 impl Neg for Mat4 {
     type Output = Self;
+
     fn neg(self) -> Self::Output {
         Self {
             x_axis: -self.x_axis,

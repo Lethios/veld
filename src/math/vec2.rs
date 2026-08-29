@@ -34,8 +34,9 @@ impl Vec2 {
     }
 }
 
-impl Add<Vec2> for Vec2 {
+impl Add for Vec2 {
     type Output = Self;
+
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x + rhs.x,
@@ -44,8 +45,9 @@ impl Add<Vec2> for Vec2 {
     }
 }
 
-impl Sub<Vec2> for Vec2 {
+impl Sub for Vec2 {
     type Output = Self;
+
     fn sub(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x - rhs.x,
@@ -54,8 +56,9 @@ impl Sub<Vec2> for Vec2 {
     }
 }
 
-impl Mul<Vec2> for Vec2 {
+impl Mul for Vec2 {
     type Output = Self;
+
     fn mul(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x * rhs.x,
@@ -66,6 +69,7 @@ impl Mul<Vec2> for Vec2 {
 
 impl Mul<f32> for Vec2 {
     type Output = Self;
+
     fn mul(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x * rhs,
@@ -74,8 +78,9 @@ impl Mul<f32> for Vec2 {
     }
 }
 
-impl Div<Vec2> for Vec2 {
+impl Div for Vec2 {
     type Output = Self;
+
     fn div(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x / rhs.x,
@@ -86,6 +91,7 @@ impl Div<Vec2> for Vec2 {
 
 impl Div<f32> for Vec2 {
     type Output = Self;
+
     fn div(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x / rhs,
@@ -96,6 +102,7 @@ impl Div<f32> for Vec2 {
 
 impl Neg for Vec2 {
     type Output = Self;
+
     fn neg(self) -> Self::Output {
         Self {
             x: -self.x,

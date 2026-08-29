@@ -36,8 +36,9 @@ impl Vec4 {
     }
 }
 
-impl Add<Vec4> for Vec4 {
+impl Add for Vec4 {
     type Output = Self;
+
     fn add(self, rhs: Vec4) -> Self::Output {
         Self {
             x: self.x + rhs.x,
@@ -48,8 +49,9 @@ impl Add<Vec4> for Vec4 {
     }
 }
 
-impl Sub<Vec4> for Vec4 {
+impl Sub for Vec4 {
     type Output = Self;
+
     fn sub(self, rhs: Vec4) -> Self::Output {
         Self {
             x: self.x - rhs.x,
@@ -60,8 +62,9 @@ impl Sub<Vec4> for Vec4 {
     }
 }
 
-impl Mul<Vec4> for Vec4 {
+impl Mul for Vec4 {
     type Output = Self;
+
     fn mul(self, rhs: Vec4) -> Self::Output {
         Self {
             x: self.x * rhs.x,
@@ -74,6 +77,7 @@ impl Mul<Vec4> for Vec4 {
 
 impl Mul<f32> for Vec4 {
     type Output = Self;
+
     fn mul(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x * rhs,
@@ -84,8 +88,9 @@ impl Mul<f32> for Vec4 {
     }
 }
 
-impl Div<Vec4> for Vec4 {
+impl Div for Vec4 {
     type Output = Self;
+
     fn div(self, rhs: Vec4) -> Self::Output {
         Self {
             x: self.x / rhs.x,
@@ -98,6 +103,7 @@ impl Div<Vec4> for Vec4 {
 
 impl Div<f32> for Vec4 {
     type Output = Self;
+
     fn div(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x / rhs,
@@ -110,6 +116,7 @@ impl Div<f32> for Vec4 {
 
 impl Neg for Vec4 {
     type Output = Self;
+
     fn neg(self) -> Self::Output {
         Self {
             x: -self.x,
