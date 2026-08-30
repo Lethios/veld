@@ -19,7 +19,10 @@ impl Canvas {
         Self {
             width,
             height,
-            color_buffer: vec![0x00000000; (width as usize).checked_mul(height as usize).unwrap()],
+            color_buffer: vec![
+                0x00000000;
+                (width as usize).checked_mul(height as usize).expect("err")
+            ],
             depth_buffer: vec![f32::INFINITY; (width * height) as usize],
         }
     }
@@ -57,6 +60,7 @@ impl Canvas {
     ///
     /// Coordinates are rounded to the nearest integer.
     /// Pixels outside the Canvas bounds are discarded.
+    #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
     pub fn set_pixel(&mut self, x: f32, y: f32, color: u32) {
         let x = x.round() as i32;
         let y = y.round() as i32;
@@ -64,25 +68,42 @@ impl Canvas {
         let offset_width = self.width as i32 / 2 + x;
         let offset_height = self.height as i32 / 2 - y;
 
-        let index = offset_height * self.width as i32 + offset_width;
-
-        if let Some(value) = self.color_buffer.get_mut(index as usize) {
-            *value = color;
+        if offset_width < 0
+            || offset_width >= self.width as i32
+            || offset_height < 0
+            || offset_height >= self.height as i32
+        {
+            return;
         }
+
+        let offset_width = offset_width.cast_unsigned();
+        let offset_height = offset_height.cast_unsigned();
+        let index = offset_height * self.width + offset_width;
+
+        self.color_buffer[index as usize] = color;
     }
 
     /// Sets the pixel at `(x, y)` to the given `color`.
     ///
     /// Pixels outside the Canvas bounds are discarded.
+    #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
     fn set_pixel_i32(&mut self, x: i32, y: i32, color: u32) {
         let offset_width = self.width as i32 / 2 + x;
         let offset_height = self.height as i32 / 2 - y;
 
-        let index = offset_height * self.width as i32 + offset_width;
-
-        if let Some(value) = self.color_buffer.get_mut(index as usize) {
-            *value = color;
+        if offset_width < 0
+            || offset_width >= self.width as i32
+            || offset_height < 0
+            || offset_height >= self.height as i32
+        {
+            return;
         }
+
+        let offset_width = offset_width.cast_unsigned();
+        let offset_height = offset_height.cast_unsigned();
+        let index = offset_height * self.width + offset_width;
+
+        self.color_buffer[index as usize] = color;
     }
 
     /// Draws a line from `start` to `end`.
