@@ -1,7 +1,7 @@
 use crate::math::{Vec3, Vec4};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-/// A 4x4 matrix.
+/// A 4x4 matrix. Uses the column-major order.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Mat4 {
     pub x_axis: Vec4,
@@ -11,24 +11,30 @@ pub struct Mat4 {
 }
 
 impl Mat4 {
-    /// Creates a new Mat4.
-    pub fn new(x_axis: Vec4, y_axis: Vec4, z_axis: Vec4, w_axis: Vec4) -> Self {
+    /// Returns a `Mat4` with all elements set to 0.0.
+    pub const ZERO: Self = Self::new(
+        Vec4::new(0.0, 0.0, 0.0, 0.0),
+        Vec4::new(0.0, 0.0, 0.0, 0.0),
+        Vec4::new(0.0, 0.0, 0.0, 0.0),
+        Vec4::new(0.0, 0.0, 0.0, 0.0),
+    );
+
+    /// Returns a `Mat4` identity matrix.
+    pub const IDENTITY: Self = Self::new(
+        Vec4::new(1.0, 0.0, 0.0, 0.0),
+        Vec4::new(0.0, 1.0, 0.0, 0.0),
+        Vec4::new(0.0, 0.0, 1.0, 0.0),
+        Vec4::new(0.0, 0.0, 0.0, 1.0),
+    );
+
+    /// Creates a new `Mat4`.
+    pub const fn new(x_axis: Vec4, y_axis: Vec4, z_axis: Vec4, w_axis: Vec4) -> Self {
         Self {
             x_axis,
             y_axis,
             z_axis,
             w_axis,
         }
-    }
-
-    /// Returns an identity matrix.
-    pub fn identity() -> Self {
-        Self::new(
-            Vec4::new(1.0, 0.0, 0.0, 0.0),
-            Vec4::new(0.0, 1.0, 0.0, 0.0),
-            Vec4::new(0.0, 0.0, 1.0, 0.0),
-            Vec4::new(0.0, 0.0, 0.0, 1.0),
-        )
     }
 
     /// Returns a scaling matrix.
@@ -89,7 +95,6 @@ impl Mat4 {
 
     /// Returns a perspective projection matrix.
     ///
-    /// `fov` is the vertical field of view in radians.
     /// Uses OpenGL NDC conventions.
     pub fn perspective(fov: f32, aspect: f32, near: f32, far: f32) -> Self {
         let tan_half_fov: f32 = (fov / 2.0).tan();

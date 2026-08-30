@@ -1,6 +1,8 @@
 use crate::Vec2;
 
 /// A 2-dimensional drawing canvas using a Cartesian coordinate system.
+///
+/// The `color_buffer` stores pixels in `0xAARRGGBB` format (alpha will be ignored by the display backend).
 pub struct Canvas {
     width: u32,
     height: u32,
@@ -10,6 +12,7 @@ pub struct Canvas {
 
 impl Canvas {
     /// Creates a new Canvas with the given dimensions.
+    ///
     /// `color_buffer` is initialized with all pixels set to black, while
     /// `depth_buffer` is initialized with all values set to infinity.
     pub fn new(width: u32, height: u32) -> Self {
@@ -36,7 +39,7 @@ impl Canvas {
         &self.color_buffer
     }
 
-    /// Clears `color_buffer` by filling every pixel with `color`.
+    /// Clears `color_buffer` by setting every pixel to `color`.
     pub fn clear(&mut self, color: u32) {
         for elem in self.color_buffer.iter_mut() {
             *elem = color;
@@ -50,7 +53,8 @@ impl Canvas {
         }
     }
 
-    /// Plots a single pixel at the given coordinates `(x, y)`.
+    /// Sets the pixel at `(x, y)` to the given `color`.
+    ///
     /// Coordinates are rounded to the nearest integer.
     /// Pixels outside the Canvas bounds are discarded.
     pub fn set_pixel(&mut self, x: f32, y: f32, color: u32) {
@@ -67,7 +71,8 @@ impl Canvas {
         }
     }
 
-    /// Plots a single pixel at the given coordinates `(x, y)`.
+    /// Sets the pixel at `(x, y)` to the given `color`.
+    ///
     /// Pixels outside the Canvas bounds are discarded.
     fn set_pixel_i32(&mut self, x: i32, y: i32, color: u32) {
         let offset_width = self.width as i32 / 2 + x;
@@ -81,6 +86,7 @@ impl Canvas {
     }
 
     /// Draws a line from `start` to `end`.
+    ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_line(&mut self, start: Vec2, end: Vec2, color: u32) {
         let mut x1 = start.x.round() as i32;
@@ -114,6 +120,7 @@ impl Canvas {
     }
 
     /// Draws an outline of a circle with the given `radius`, centered at `center`.
+    ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_circle(&mut self, center: Vec2, radius: f32, color: u32) {
         let x1 = center.x.round() as i32;

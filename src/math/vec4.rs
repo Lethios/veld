@@ -10,10 +10,10 @@ pub struct Vec4 {
 }
 
 impl Vec4 {
-    /// A `Vec4` with all components set to 0.0.
+    /// Returns a `Vec4` with all components set to 0.0.
     pub const ZERO: Self = Self::new(0.0, 0.0, 0.0, 0.0);
 
-    /// A `Vec4` with all components set to 1.0.
+    /// Returns a `Vec4` with all components set to 1.0.
     pub const ONE: Self = Self::new(1.0, 1.0, 1.0, 1.0);
 
     /// Creates a new `Vec4`.
