@@ -15,18 +15,36 @@ fn save_ppm(pixels: &[u32], width: u32, height: u32, path: &str) {
 }
 
 fn main() {
-    let mut canvas = Canvas::new(200, 200);
+    let mut canvas = Canvas::new(320, 250);
 
-    canvas.set_pixel(0.0, 0.0, 0xFFFF0000);
-    canvas.draw_circle_filled(Vec2::ZERO, 25.0, 0xFF0000FF);
-    canvas.draw_line(Vec2::new(0.0, 25.0), Vec2::new(-21.65, -12.5), 0xFF00FF00);
-    canvas.draw_line(
-        Vec2::new(-21.65, -12.5),
-        Vec2::new(21.65, -12.5),
+    canvas.set_pixel(7.0, 45.0, 0xFF0000FF);
+    canvas.set_pixel(35.0, 100.0, 0xFF0000FF);
+    canvas.set_pixel(45.0, 60.0, 0xFF0000FF);
+    canvas.set_pixel(120.0, 35.0, 0xFF0000FF);
+    canvas.set_pixel(90.0, 5.0, 0xFF0000FF);
+    canvas.set_pixel(45.0, 110.0, 0xFF0000FF);
+    canvas.set_pixel(115.0, 83.0, 0xFF0000FF);
+    canvas.set_pixel(80.0, 90.0, 0xFF0000FF);
+    canvas.set_pixel(85.0, 120.0, 0xFF0000FF);
+
+    canvas.draw_triangle_filled(
+        Vec2::new(7.0, 45.0),
+        Vec2::new(35.0, 100.0),
+        Vec2::new(45.0, 60.0),
+        0xFFFF0000,
+    );
+    canvas.draw_triangle_filled(
+        Vec2::new(120.0, 35.0),
+        Vec2::new(90.0, 5.0),
+        Vec2::new(45.0, 110.0),
+        0xFFFFFFFF,
+    );
+    canvas.draw_triangle_filled(
+        Vec2::new(115.0, 83.0),
+        Vec2::new(80.0, 90.0),
+        Vec2::new(85.0, 120.0),
         0xFF00FF00,
     );
-    canvas.draw_line(Vec2::new(21.65, -12.5), Vec2::new(0.0, 25.0), 0xFF00FF00);
-    canvas.draw_circle(Vec2::ZERO, 50.0, 0xFFFF0000);
 
-    save_ppm(canvas.pixels(), 200, 200, "out.ppm");
+    save_ppm(canvas.pixels(), 320, 250, "out.ppm");
 }

@@ -125,7 +125,7 @@ impl Mat4 {
 
     /// Returns the transpose of `self`.
     pub fn transpose(&self) -> Self {
-        Mat4::new(
+        Self::new(
             Vec4::new(self.x_axis.x, self.y_axis.x, self.z_axis.x, self.w_axis.x),
             Vec4::new(self.x_axis.y, self.y_axis.y, self.z_axis.y, self.w_axis.y),
             Vec4::new(self.x_axis.z, self.y_axis.z, self.z_axis.z, self.w_axis.z),

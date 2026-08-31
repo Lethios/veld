@@ -1,4 +1,4 @@
-use crate::Vec2;
+use crate::{Mat2, Vec2, Vec3};
 
 /// A 2-dimensional drawing canvas using a Cartesian coordinate system.
 ///
@@ -200,6 +200,36 @@ impl Canvas {
             if (prev_err > x) || (err > y) {
                 x += 1;
                 err += 2 * x + 1;
+            }
+        }
+    }
+
+    pub fn draw_triangle(&mut self, a: Vec2, b: Vec2, c: Vec2, color: u32) {
+        self.draw_line(a, b, color);
+        self.draw_line(b, c, color);
+        self.draw_line(c, a, color);
+    }
+
+    pub fn draw_triangle_filled(&mut self, a: Vec2, b: Vec2, c: Vec2, color: u32) {
+        let top_left = Vec2::new(a.x.min(b.x).min(c.x), a.y.max(b.y).max(c.y));
+        let bottom_right = Vec2::new(a.x.max(b.x).max(c.x), a.y.min(b.y).min(c.y));
+
+        let inverse = match Mat2::new(b - a, c - a).inverse() {
+            Some(val) => val,
+            None => return,
+        };
+
+        for x in (top_left.x.round() as i32)..=(bottom_right.x.round() as i32) {
+            for y in (bottom_right.y.round() as i32)..=(top_left.y.round() as i32) {
+                let weights = inverse * Vec2::new(x as f32 - a.x, y as f32 - a.y);
+                let weights = Vec3::new(weights.x, weights.y, 1.0 - weights.x - weights.y);
+
+                if (weights.x >= -1e-5)
+                    && (weights.y >= -1e-5)
+                    && (weights.x + weights.y <= 1.0 + 1e-5)
+                {
+                    self.set_pixel_i32(x, y, color);
+                }
             }
         }
     }
