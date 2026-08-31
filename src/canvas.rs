@@ -57,8 +57,8 @@ impl Canvas {
     }
 
     fn buffer_index(&mut self, x: i32, y: i32) -> Option<usize> {
-        let offset_width = self.width as i32 / 2 + x;
-        let offset_height = self.height as i32 / 2 - y;
+        let offset_width = self.width as i32 / 2 + x as i32;
+        let offset_height = self.height as i32 / 2 - y as i32;
 
         if offset_width < 0
             || offset_width >= self.width as i32
@@ -79,11 +79,14 @@ impl Canvas {
     /// Coordinates are rounded to the nearest integer.
     /// Pixels outside the Canvas bounds are discarded.
     #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
-    pub fn set_pixel(&mut self, x: f32, y: f32, color: u32) {
+    pub fn set_pixel(&mut self, x: f32, y: f32, z: f32, color: u32) {
         let x = x.round() as i32;
         let y = y.round() as i32;
 
-        if let Some(index) = self.buffer_index(x, y) {
+        if let Some(index) = self.buffer_index(x, y)
+            && z <= self.depth_buffer[index]
+        {
+            self.depth_buffer[index] = z;
             self.color_buffer[index] = color;
         }
     }
@@ -92,29 +95,22 @@ impl Canvas {
     ///
     /// Pixels outside the Canvas bounds are discarded.
     #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
-    fn set_pixel_i32(&mut self, x: i32, y: i32, color: u32) {
-        if let Some(index) = self.buffer_index(x, y) {
+    fn set_pixel_i32(&mut self, x: i32, y: i32, z: f32, color: u32) {
+        if let Some(index) = self.buffer_index(x, y)
+            && z <= self.depth_buffer[index]
+        {
+            self.depth_buffer[index] = z;
             self.color_buffer[index] = color;
-        }
-    }
-
-    fn set_depth(&mut self, x: f32, y: f32, z: f32) {
-        let x = x.round() as i32;
-        let y = y.round() as i32;
-
-        if let Some(index) = self.buffer_index(x, y) {
-            if z <= self.depth_buffer[index] {
-                self.depth_buffer[index] = z
-            }
         }
     }
 
     /// Draws a line from `start` to `end`.
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
-    pub fn draw_line(&mut self, start: Vec2, end: Vec2, color: u32) {
+    pub fn draw_line(&mut self, start: Vec3, end: Vec3, color: u32) {
         let mut x1 = start.x.round() as i32;
         let mut y1 = start.y.round() as i32;
+
         let x2 = end.x.round() as i32;
         let y2 = end.y.round() as i32;
 
@@ -124,12 +120,17 @@ impl Canvas {
         let dy = -(y2 - y1).abs();
         let y_step = if y1 < y2 { 1 } else { -1 };
 
+        let dz = (end.z - start.z) / (dx.max(dy.abs()) as f32);
+        let mut z = start.z;
+
         let mut err = dx + dy;
 
         loop {
-            self.set_pixel_i32(x1, y1, color);
+            self.set_pixel_i32(x1, y1, z, color);
 
-            if x1 == x2 && y1 == y2 {
+            if (x_step > 0 && x1 >= x2 || x_step < 0 && x1 <= x2)
+                && (y_step > 0 && y1 >= y2 || y_step < 0 && y1 <= y2)
+            {
                 break;
             }
             if 2 * err >= dy {
@@ -140,15 +141,17 @@ impl Canvas {
                 err += dx;
                 y1 += y_step;
             }
+            z += dz;
         }
     }
 
     /// Draws an outline of a circle with the given `radius`, centered at `center`.
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
-    pub fn draw_circle(&mut self, center: Vec2, radius: f32, color: u32) {
+    pub fn draw_circle(&mut self, center: Vec3, radius: f32, color: u32) {
         let x1 = center.x.round() as i32;
         let y1 = center.y.round() as i32;
+        let z = center.z;
         let radius = radius.round() as i32;
 
         let mut x = -radius;
@@ -156,10 +159,10 @@ impl Canvas {
         let mut err = 2 - 2 * radius;
 
         while x <= 0 {
-            self.set_pixel_i32(x1 - x, y1 + y, color);
-            self.set_pixel_i32(x1 - y, y1 - x, color);
-            self.set_pixel_i32(x1 + x, y1 - y, color);
-            self.set_pixel_i32(x1 + y, y1 + x, color);
+            self.set_pixel_i32(x1 - x, y1 + y, z, color);
+            self.set_pixel_i32(x1 - y, y1 - x, z, color);
+            self.set_pixel_i32(x1 + x, y1 - y, z, color);
+            self.set_pixel_i32(x1 + y, y1 + x, z, color);
 
             let prev_err = err;
 
@@ -175,9 +178,10 @@ impl Canvas {
     }
 
     /// Draws a filled circle with the given `radius`, centered at `center`.
-    pub fn draw_circle_filled(&mut self, center: Vec2, radius: f32, color: u32) {
+    pub fn draw_circle_filled(&mut self, center: Vec3, radius: f32, color: u32) {
         let x1 = center.x.round() as i32;
         let y1 = center.y.round() as i32;
+        let z = center.z;
         let radius = radius.round() as i32;
 
         let mut x = -radius;
@@ -186,12 +190,12 @@ impl Canvas {
 
         while x <= 0 {
             for x_curr in x1 - x..=x1 + x {
-                self.set_pixel_i32(x_curr, y1 + y, color);
-                self.set_pixel_i32(x_curr, y1 - y, color);
+                self.set_pixel_i32(x_curr, y1 + y, z, color);
+                self.set_pixel_i32(x_curr, y1 - y, z, color);
             }
             for x_curr in x1 - y..=x1 + y {
-                self.set_pixel_i32(x_curr, y1 + x, color);
-                self.set_pixel_i32(x_curr, y1 - x, color);
+                self.set_pixel_i32(x_curr, y1 + x, z, color);
+                self.set_pixel_i32(x_curr, y1 - x, z, color);
             }
 
             let prev_err = err;
@@ -207,17 +211,22 @@ impl Canvas {
         }
     }
 
-    pub fn draw_triangle(&mut self, a: Vec2, b: Vec2, c: Vec2, color: u32) {
+    pub fn draw_triangle(&mut self, a: Vec3, b: Vec3, c: Vec3, color: u32) {
         self.draw_line(a, b, color);
         self.draw_line(b, c, color);
         self.draw_line(c, a, color);
     }
 
-    pub fn draw_triangle_filled(&mut self, a: Vec2, b: Vec2, c: Vec2, color: u32) {
+    pub fn draw_triangle_filled(&mut self, a: Vec3, b: Vec3, c: Vec3, color: u32) {
         let top_left = Vec2::new(a.x.min(b.x).min(c.x), a.y.max(b.y).max(c.y));
         let bottom_right = Vec2::new(a.x.max(b.x).max(c.x), a.y.min(b.y).min(c.y));
 
-        let inverse = match Mat2::new(b - a, c - a).inverse() {
+        let inverse = match Mat2::new(
+            Vec2::new(b.x - a.x, b.y - a.y),
+            Vec2::new(c.x - a.x, c.y - a.y),
+        )
+        .inverse()
+        {
             Some(val) => val,
             None => return,
         };
@@ -231,7 +240,8 @@ impl Canvas {
                     && (weights.y >= -1e-5)
                     && (weights.x + weights.y <= 1.0 + 1e-5)
                 {
-                    self.set_pixel_i32(x, y, color);
+                    let z = weights.x * a.z + weights.y * b.z + weights.z * c.z;
+                    self.set_pixel_i32(x, y, z, color);
                 }
             }
         }
