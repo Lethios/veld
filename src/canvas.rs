@@ -56,6 +56,24 @@ impl Canvas {
         }
     }
 
+    fn buffer_index(&mut self, x: i32, y: i32) -> Option<usize> {
+        let offset_width = self.width as i32 / 2 + x;
+        let offset_height = self.height as i32 / 2 - y;
+
+        if offset_width < 0
+            || offset_width >= self.width as i32
+            || offset_height < 0
+            || offset_height >= self.height as i32
+        {
+            return None;
+        }
+
+        let offset_width = offset_width.cast_unsigned();
+        let offset_height = offset_height.cast_unsigned();
+
+        Some((offset_height * self.width + offset_width) as usize)
+    }
+
     /// Sets the pixel at `(x, y)` to the given `color`.
     ///
     /// Coordinates are rounded to the nearest integer.
@@ -65,22 +83,9 @@ impl Canvas {
         let x = x.round() as i32;
         let y = y.round() as i32;
 
-        let offset_width = self.width as i32 / 2 + x;
-        let offset_height = self.height as i32 / 2 - y;
-
-        if offset_width < 0
-            || offset_width >= self.width as i32
-            || offset_height < 0
-            || offset_height >= self.height as i32
-        {
-            return;
+        if let Some(index) = self.buffer_index(x, y) {
+            self.color_buffer[index] = color;
         }
-
-        let offset_width = offset_width.cast_unsigned();
-        let offset_height = offset_height.cast_unsigned();
-        let index = offset_height * self.width + offset_width;
-
-        self.color_buffer[index as usize] = color;
     }
 
     /// Sets the pixel at `(x, y)` to the given `color`.
@@ -88,22 +93,20 @@ impl Canvas {
     /// Pixels outside the Canvas bounds are discarded.
     #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
     fn set_pixel_i32(&mut self, x: i32, y: i32, color: u32) {
-        let offset_width = self.width as i32 / 2 + x;
-        let offset_height = self.height as i32 / 2 - y;
-
-        if offset_width < 0
-            || offset_width >= self.width as i32
-            || offset_height < 0
-            || offset_height >= self.height as i32
-        {
-            return;
+        if let Some(index) = self.buffer_index(x, y) {
+            self.color_buffer[index] = color;
         }
+    }
 
-        let offset_width = offset_width.cast_unsigned();
-        let offset_height = offset_height.cast_unsigned();
-        let index = offset_height * self.width + offset_width;
+    fn set_depth(&mut self, x: f32, y: f32, z: f32) {
+        let x = x.round() as i32;
+        let y = y.round() as i32;
 
-        self.color_buffer[index as usize] = color;
+        if let Some(index) = self.buffer_index(x, y) {
+            if z <= self.depth_buffer[index] {
+                self.depth_buffer[index] = z
+            }
+        }
     }
 
     /// Draws a line from `start` to `end`.
