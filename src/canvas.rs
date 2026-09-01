@@ -14,7 +14,7 @@ impl Canvas {
     /// Creates a new Canvas with the given dimensions.
     ///
     /// `color_buffer` is initialized with all pixels set to black, while
-    /// `depth_buffer` is initialized with all values set to infinity.
+    /// `depth_buffer` is initialized with all values set to negative infinity.
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
@@ -23,7 +23,7 @@ impl Canvas {
                 0x00000000;
                 (width as usize).checked_mul(height as usize).expect("err")
             ],
-            depth_buffer: vec![f32::INFINITY; (width * height) as usize],
+            depth_buffer: vec![f32::NEG_INFINITY; (width * height) as usize],
         }
     }
 
@@ -56,6 +56,9 @@ impl Canvas {
         }
     }
 
+    /// Converts Cartesian coordinates to framebuffer index.
+    ///
+    /// Returns `None` if outside the Canvas bounds.
     fn buffer_index(&mut self, x: i32, y: i32) -> Option<usize> {
         let offset_width = self.width as i32 / 2 + x as i32;
         let offset_height = self.height as i32 / 2 - y as i32;
@@ -84,7 +87,7 @@ impl Canvas {
         let y = y.round() as i32;
 
         if let Some(index) = self.buffer_index(x, y)
-            && z <= self.depth_buffer[index]
+            && z >= self.depth_buffer[index]
         {
             self.depth_buffer[index] = z;
             self.color_buffer[index] = color;
@@ -97,7 +100,7 @@ impl Canvas {
     #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
     fn set_pixel_i32(&mut self, x: i32, y: i32, z: f32, color: u32) {
         if let Some(index) = self.buffer_index(x, y)
-            && z <= self.depth_buffer[index]
+            && z >= self.depth_buffer[index]
         {
             self.depth_buffer[index] = z;
             self.color_buffer[index] = color;
@@ -211,12 +214,14 @@ impl Canvas {
         }
     }
 
+    /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
     pub fn draw_triangle(&mut self, a: Vec3, b: Vec3, c: Vec3, color: u32) {
         self.draw_line(a, b, color);
         self.draw_line(b, c, color);
         self.draw_line(c, a, color);
     }
 
+    /// Draws a filled triangle with vertices `a`, `b` and `c`.
     pub fn draw_triangle_filled(&mut self, a: Vec3, b: Vec3, c: Vec3, color: u32) {
         let top_left = Vec2::new(a.x.min(b.x).min(c.x), a.y.max(b.y).max(c.y));
         let bottom_right = Vec2::new(a.x.max(b.x).max(c.x), a.y.min(b.y).min(c.y));
