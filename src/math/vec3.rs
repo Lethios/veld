@@ -28,7 +28,7 @@ impl Vec3 {
     /// Returns the cross product of `self` and `rhs`.
     pub fn cross(self, rhs: Self) -> Self {
         Self::new(
-            self.y * rhs.z - self.z * rhs.x,
+            self.y * rhs.z - self.z * rhs.y,
             self.z * rhs.x - self.x * rhs.z,
             self.x * rhs.y - self.y * rhs.x,
         )

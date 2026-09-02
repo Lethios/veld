@@ -117,7 +117,7 @@ impl Mat4 {
                 -right.dot(position),
                 -up.dot(position),
                 forward.dot(position),
-                0.0,
+                1.0,
             ),
         )
     }

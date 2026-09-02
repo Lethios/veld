@@ -49,7 +49,7 @@ impl Canvas {
     /// Resets `depth_buffer` by setting every value to infinity.
     pub fn clear_depth(&mut self) {
         for elem in self.depth_buffer.iter_mut() {
-            *elem = f32::INFINITY;
+            *elem = f32::NEG_INFINITY;
         }
     }
 
