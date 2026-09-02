@@ -25,6 +25,15 @@ impl Vec3 {
         (self.x * rhs.x) + (self.y * rhs.y) + (self.z * rhs.z)
     }
 
+    /// Returns the cross product of `self` and `rhs`.
+    pub fn cross(self, rhs: Self) -> Self {
+        Self::new(
+            self.y * rhs.z - self.z * rhs.x,
+            self.z * rhs.x - self.x * rhs.z,
+            self.x * rhs.y - self.y * rhs.x,
+        )
+    }
+
     /// Returns the length of `self`.
     pub fn length(self) -> f32 {
         self.dot(self).sqrt()
