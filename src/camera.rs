@@ -98,6 +98,7 @@ impl Camera {
         self.projection_matrix(aspect) * self.view_matrix()
     }
 
+    /// Returns the projection of Vec3 in world space to screen space coordinates.
     pub fn project(&self, vec: Vec3, screen_width: f32, screen_height: f32) -> Option<Vec3> {
         let view_proj_matrix = self.view_projection(screen_width / screen_height);
 
@@ -119,7 +120,7 @@ impl Camera {
             return None;
         }
 
-        // Convert to screen coordinates
+        // Convert to screen space coordinates
         Some(Vec3::new(
             ndc.x * screen_width / 2.0,
             ndc.y * screen_height / 2.0,
