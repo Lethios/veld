@@ -19,10 +19,7 @@ impl Canvas {
         Self {
             width,
             height,
-            color_buffer: vec![
-                0x00000000;
-                (width as usize).checked_mul(height as usize).expect("err")
-            ],
+            color_buffer: vec![0x00000000; (width as usize).checked_mul(height as usize).unwrap()],
             depth_buffer: vec![f32::NEG_INFINITY; (width * height) as usize],
         }
     }
@@ -63,6 +60,7 @@ impl Canvas {
         let offset_width = self.width as i32 / 2 + x as i32;
         let offset_height = self.height as i32 / 2 - y as i32;
 
+        // Bounds check
         if offset_width < 0
             || offset_width >= self.width as i32
             || offset_height < 0
@@ -111,17 +109,17 @@ impl Canvas {
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_line(&mut self, start: Vec3, end: Vec3, color: u32) {
-        let mut x1 = start.x.round() as i32;
-        let mut y1 = start.y.round() as i32;
+        let mut x = start.x.round() as i32;
+        let mut y = start.y.round() as i32;
 
-        let x2 = end.x.round() as i32;
-        let y2 = end.y.round() as i32;
+        let x_end = end.x.round() as i32;
+        let y_end = end.y.round() as i32;
 
-        let dx = (x2 - x1).abs();
-        let x_step = if x1 < x2 { 1 } else { -1 };
+        let dx = (x_end - x).abs();
+        let x_step = if x < x_end { 1 } else { -1 };
 
-        let dy = -(y2 - y1).abs();
-        let y_step = if y1 < y2 { 1 } else { -1 };
+        let dy = -(y_end - y).abs();
+        let y_step = if y < y_end { 1 } else { -1 };
 
         let dz = (end.z - start.z) / (dx.max(dy.abs()) as f32);
         let mut z = start.z;
@@ -129,20 +127,20 @@ impl Canvas {
         let mut err = dx + dy;
 
         loop {
-            self.set_pixel_i32(x1, y1, z, color);
+            self.set_pixel_i32(x, y, z, color);
 
-            if (x_step > 0 && x1 >= x2 || x_step < 0 && x1 <= x2)
-                && (y_step > 0 && y1 >= y2 || y_step < 0 && y1 <= y2)
+            if (x_step > 0 && x >= x_end || x_step < 0 && x <= x_end)
+                && (y_step > 0 && y >= y_end || y_step < 0 && y <= y_end)
             {
                 break;
             }
             if 2 * err >= dy {
                 err += dy;
-                x1 += x_step;
+                x += x_step;
             }
             if 2 * err <= dx {
                 err += dx;
-                y1 += y_step;
+                y += y_step;
             }
             z += dz;
         }
@@ -152,8 +150,8 @@ impl Canvas {
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_circle(&mut self, center: Vec3, radius: f32, color: u32) {
-        let x1 = center.x.round() as i32;
-        let y1 = center.y.round() as i32;
+        let x_cen = center.x.round() as i32;
+        let y_cen = center.y.round() as i32;
         let z = center.z;
         let radius = radius.round() as i32;
 
@@ -162,10 +160,10 @@ impl Canvas {
         let mut err = 2 - 2 * radius;
 
         while x <= 0 {
-            self.set_pixel_i32(x1 - x, y1 + y, z, color);
-            self.set_pixel_i32(x1 - y, y1 - x, z, color);
-            self.set_pixel_i32(x1 + x, y1 - y, z, color);
-            self.set_pixel_i32(x1 + y, y1 + x, z, color);
+            self.set_pixel_i32(x_cen - x, y_cen + y, z, color);
+            self.set_pixel_i32(x_cen - y, y_cen - x, z, color);
+            self.set_pixel_i32(x_cen + x, y_cen - y, z, color);
+            self.set_pixel_i32(x_cen + y, y_cen + x, z, color);
 
             let prev_err = err;
 
@@ -182,8 +180,8 @@ impl Canvas {
 
     /// Draws a filled circle with the given `radius`, centered at `center`.
     pub fn draw_circle_filled(&mut self, center: Vec3, radius: f32, color: u32) {
-        let x1 = center.x.round() as i32;
-        let y1 = center.y.round() as i32;
+        let x_cen = center.x.round() as i32;
+        let y_cen = center.y.round() as i32;
         let z = center.z;
         let radius = radius.round() as i32;
 
@@ -192,13 +190,13 @@ impl Canvas {
         let mut err = 2 - 2 * radius;
 
         while x <= 0 {
-            for x_curr in x1 - x..=x1 + x {
-                self.set_pixel_i32(x_curr, y1 + y, z, color);
-                self.set_pixel_i32(x_curr, y1 - y, z, color);
+            for x_curr in x_cen - x..=x_cen + x {
+                self.set_pixel_i32(x_curr, y_cen + y, z, color);
+                self.set_pixel_i32(x_curr, y_cen - y, z, color);
             }
-            for x_curr in x1 - y..=x1 + y {
-                self.set_pixel_i32(x_curr, y1 + x, z, color);
-                self.set_pixel_i32(x_curr, y1 - x, z, color);
+            for x_curr in x_cen - y..=x_cen + y {
+                self.set_pixel_i32(x_curr, y_cen + x, z, color);
+                self.set_pixel_i32(x_curr, y_cen - x, z, color);
             }
 
             let prev_err = err;
@@ -223,6 +221,14 @@ impl Canvas {
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
     pub fn draw_triangle_filled(&mut self, a: Vec3, b: Vec3, c: Vec3, color: u32) {
+        // Back-face culling
+        let ab_edge = b - a;
+        let ac_edge = c - a;
+        if ab_edge.cross(ac_edge).z <= 0.0 {
+            return;
+        }
+
+        // Coordinates of bounding box
         let top_left = Vec2::new(a.x.min(b.x).min(c.x), a.y.max(b.y).max(c.y));
         let bottom_right = Vec2::new(a.x.max(b.x).max(c.x), a.y.min(b.y).min(c.y));
 
