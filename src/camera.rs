@@ -1,7 +1,7 @@
-use crate::{Mat4, Vec3};
+use crate::{Mat4, Vec3, Vec4};
 
 /// The projection mode used by `Camera`.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum Projection {
     /// Refer to [Orthographic Projection](https://en.wikipedia.org/wiki/Orthographic_projection).
     ///
@@ -14,6 +14,7 @@ pub enum Projection {
 }
 
 /// A camera defined by position, yaw and pitch.
+#[derive(Debug, Clone, Copy)]
 pub struct Camera {
     /// World space position of `Camera`.
     pub position: Vec3,
@@ -65,7 +66,7 @@ impl Camera {
 
     /// Returns the `Camera`'s up direction.
     pub fn local_up(&self) -> Vec3 {
-        self.local_forward().cross(self.local_right())
+        self.local_right().cross(self.local_forward())
     }
 
     /// Returns the matrix that transforms world space to camera space.
@@ -95,6 +96,35 @@ impl Camera {
     /// Returns the product of `projection_matrix` and `view_matrix`.
     pub fn view_projection(&self, aspect: f32) -> Mat4 {
         self.projection_matrix(aspect) * self.view_matrix()
+    }
+
+    pub fn project(&self, vec: Vec3, screen_width: f32, screen_height: f32) -> Option<Vec3> {
+        let view_proj_matrix = self.view_projection(screen_width / screen_height);
+
+        // Convert to clip space
+        let clip = view_proj_matrix * Vec4::new(vec.x, vec.y, vec.z, 1.0);
+
+        // Reject if behind camera
+        // TODO: implement full frustum clipping
+        if clip.w <= 0.0 {
+            return None;
+        }
+
+        // Convert to NDC
+        let ndc = Vec3::new(clip.x / clip.w, clip.y / clip.w, clip.z / clip.w);
+
+        // Reject if outside view frustum
+        if ndc.x < -1.0 || ndc.x > 1.0 || ndc.y < -1.0 || ndc.y > 1.0 || ndc.z < -1.0 || ndc.z > 1.0
+        {
+            return None;
+        }
+
+        // Convert to screen coordinates
+        Some(Vec3::new(
+            ndc.x * screen_width / 2.0,
+            ndc.y * screen_height / 2.0,
+            ndc.z,
+        ))
     }
 }
 
