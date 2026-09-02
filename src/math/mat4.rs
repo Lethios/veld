@@ -37,6 +37,16 @@ impl Mat4 {
         }
     }
 
+    /// Returns the transpose of `self`.
+    pub fn transpose(&self) -> Self {
+        Self::new(
+            Vec4::new(self.x_axis.x, self.y_axis.x, self.z_axis.x, self.w_axis.x),
+            Vec4::new(self.x_axis.y, self.y_axis.y, self.z_axis.y, self.w_axis.y),
+            Vec4::new(self.x_axis.z, self.y_axis.z, self.z_axis.z, self.w_axis.z),
+            Vec4::new(self.x_axis.w, self.y_axis.w, self.z_axis.w, self.w_axis.w),
+        )
+    }
+
     /// Returns a scaling matrix.
     pub fn scale(v: Vec3) -> Self {
         Self::new(
@@ -93,6 +103,25 @@ impl Mat4 {
         )
     }
 
+    /// Returns a view matrix.
+    pub fn look_at(position: Vec3, target: Vec3, up: Vec3) -> Self {
+        let forward = (target - position).normalize();
+        let right = forward.cross(up).normalize();
+        let up = forward.cross(right).normalize();
+
+        Mat4::new(
+            Vec4::new(right.x, up.x, -forward.x, 0.0),
+            Vec4::new(right.y, up.y, -forward.y, 0.0),
+            Vec4::new(right.z, up.z, -forward.z, 0.0),
+            Vec4::new(
+                -right.dot(position),
+                -up.dot(position),
+                forward.dot(position),
+                0.0,
+            ),
+        )
+    }
+
     /// Returns a perspective projection matrix.
     ///
     /// Uses OpenGL NDC conventions.
@@ -120,16 +149,6 @@ impl Mat4 {
                 -(far + near) / (far - near),
                 1.0,
             ),
-        )
-    }
-
-    /// Returns the transpose of `self`.
-    pub fn transpose(&self) -> Self {
-        Self::new(
-            Vec4::new(self.x_axis.x, self.y_axis.x, self.z_axis.x, self.w_axis.x),
-            Vec4::new(self.x_axis.y, self.y_axis.y, self.z_axis.y, self.w_axis.y),
-            Vec4::new(self.x_axis.z, self.y_axis.z, self.z_axis.z, self.w_axis.z),
-            Vec4::new(self.x_axis.w, self.y_axis.w, self.z_axis.w, self.w_axis.w),
         )
     }
 }

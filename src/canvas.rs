@@ -57,8 +57,8 @@ impl Canvas {
     ///
     /// Returns `None` if outside the Canvas bounds.
     fn buffer_index(&mut self, x: i32, y: i32) -> Option<usize> {
-        let offset_width = self.width as i32 / 2 + x as i32;
-        let offset_height = self.height as i32 / 2 - y as i32;
+        let offset_width = self.width as i32 / 2 + x;
+        let offset_height = self.height as i32 / 2 - y;
 
         // Bounds check
         if offset_width < 0
@@ -256,5 +256,11 @@ impl Canvas {
                 }
             }
         }
+    }
+}
+
+impl Default for Canvas {
+    fn default() -> Self {
+        Self::new(800, 600)
     }
 }
