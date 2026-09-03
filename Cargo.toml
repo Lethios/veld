@@ -6,7 +6,7 @@ description = "A lightweight 3D CPU rasterizer in Rust"
 license = "MIT"
 repository = "https://github.com/Lethios/veld"
 keywords = ["renderer", "rasterizer", "graphics", "2d", "3d"]
-categories = ["rendering", "rendering:engine", "graphics"]
+categories = ["rendering", "rendering::engine", "graphics"]
 
 [dependencies]
 
