@@ -35,14 +35,16 @@ impl Mat2 {
 
     /// Returns the inverse of `self`.
     pub fn inverse(&self) -> Option<Self> {
+        let det = self.determinant();
+
+        if det == 0.0 {
+            return None;
+        }
+
         let (a, c) = (self.x_axis.x, self.x_axis.y);
         let (b, d) = (self.y_axis.x, self.y_axis.y);
 
-        if self.determinant() != 0.0 {
-            return Some(Self::new(Vec2::new(d, -c), Vec2::new(-b, a)) / self.determinant());
-        }
-
-        None
+        Some(Self::new(Vec2::new(d, -c), Vec2::new(-b, a)) / det)
     }
 }
 
