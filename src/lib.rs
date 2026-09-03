@@ -1,5 +1,6 @@
 pub mod camera;
 pub mod canvas;
+pub mod color;
 pub mod math;
 
 pub use math::Mat2;
