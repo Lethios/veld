@@ -1,17 +1,19 @@
 use crate::{Mat2, Vec2, Vec3};
 
-/// A 2-dimensional drawing canvas using a Cartesian coordinate system.
-///
-/// The `color_buffer` stores pixels in `0xAARRGGBB` format (alpha will be ignored by the display backend).
+/// A 3-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
+    /// Width of `Canvas` in pixels.
     width: u32,
+    /// Height of `Canvas` in pixels.
     height: u32,
+    /// Pixels are stored in `0xAARRGGBB` format (alpha will be ignored by the display backend).
     color_buffer: Vec<u32>,
+    /// Negative values represent points farther away.
     depth_buffer: Vec<f32>,
 }
 
 impl Canvas {
-    /// Creates a new Canvas with the given dimensions.
+    /// Creates a new `Canvas`.
     ///
     /// `color_buffer` is initialized with all pixels set to black, while
     /// `depth_buffer` is initialized with all values set to negative infinity.
@@ -24,17 +26,17 @@ impl Canvas {
         }
     }
 
-    /// Returns the width of the Canvas in pixels.
+    /// Returns the width of `Canvas` in pixels.
     pub fn width(&self) -> u32 {
         self.width
     }
 
-    /// Returns the height of the Canvas in pixels.
+    /// Returns the height of `Canvas` in pixels.
     pub fn height(&self) -> u32 {
         self.height
     }
 
-    /// Returns a reference to `color_buffer`.
+    /// Returns an immutable reference to `color_buffer`.
     pub fn pixels(&self) -> &[u32] {
         &self.color_buffer
     }
@@ -242,6 +244,7 @@ impl Canvas {
             None => return,
         };
 
+        // Test for each pixel in the bounding box
         for x in (top_left.x.round() as i32)..=(bottom_right.x.round() as i32) {
             for y in (bottom_right.y.round() as i32)..=(top_left.y.round() as i32) {
                 let weights = inverse * Vec2::new(x as f32 - a.x, y as f32 - a.y);

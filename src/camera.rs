@@ -13,7 +13,7 @@ pub enum Projection {
     Perspective { fov: f32 },
 }
 
-/// A camera defined by position, yaw and pitch.
+/// A camera defined by `position`, `yaw` and `pitch`.
 #[derive(Debug, Clone, Copy)]
 pub struct Camera {
     /// World space position of `Camera`.
