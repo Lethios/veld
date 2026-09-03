@@ -1,6 +1,6 @@
 # veld
 
-A lightweight 3D CPU rasterizer in Rust.
+A lightweight CPU-based 3D rasterizer written in Rust.
 
 ## Todo
 - More test coverage
