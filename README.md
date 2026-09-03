@@ -68,6 +68,8 @@ fn save_as_ppm(path: &str, canvas: &Canvas) {
     std::fs::write(path, bytes).unwrap();
 }
 ```
+Used [bytes.usc.edu](https://bytes.usc.edu/~saty/tools/PGMViewer/viewer.html) to convert PPM to PNG  
+
 ![Canvas output as .png](demo.png)
 
 ## Todo
