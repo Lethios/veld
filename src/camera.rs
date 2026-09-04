@@ -73,21 +73,21 @@ impl Camera {
     ///
     /// Negative `distance` moves backwards.
     pub fn move_forward(&mut self, distance: f32) {
-        self.position = self.position + self.local_forward() * distance;
+        self.position += self.local_forward() * distance;
     }
 
     /// Moves `Camera` along its local right axis.
     ///
     /// Negative `distance` moves left.
     pub fn move_right(&mut self, distance: f32) {
-        self.position = self.position + self.local_right() * distance;
+        self.position += self.local_right() * distance;
     }
 
     /// Moves `Camera` along its local up axis.
     ///
     /// Negative `distance` moves down.
     pub fn move_up(&mut self, distance: f32) {
-        self.position = self.position + self.local_up() * distance;
+        self.position += self.local_up() * distance;
     }
 
     /// Rotates `Camera` horizontally to the right.
@@ -105,7 +105,7 @@ impl Camera {
     pub fn rotate_pitch(&mut self, angle: f32) {
         self.pitch = (self.pitch + angle).clamp(
             -std::f32::consts::FRAC_PI_2 + 0.001,
-            std::f32::consts::FRAC_2_PI - 0.001,
+            std::f32::consts::FRAC_PI_2 - 0.001,
         );
     }
 
@@ -155,7 +155,7 @@ impl Camera {
     ///
     /// Returns `None` if the point is behind the camera or outside the NDC bounds.
     pub fn clip_to_ndc(&self, clip: Vec4) -> Option<Vec3> {
-        if clip.w <= 0.0 {
+        if clip.w < 1e-6 {
             return None;
         }
 

@@ -61,7 +61,7 @@ impl Canvas {
     /// Converts Cartesian coordinates to framebuffer index.
     ///
     /// Returns `None` if outside the Canvas bounds.
-    fn buffer_index(&mut self, x: i32, y: i32) -> Option<usize> {
+    fn buffer_index(&self, x: i32, y: i32) -> Option<usize> {
         let offset_width = self.width as i32 / 2 + x;
         let offset_height = self.height as i32 / 2 - y;
 
@@ -126,7 +126,13 @@ impl Canvas {
         let dy = -(y_end - y).abs();
         let y_step = if y < y_end { 1 } else { -1 };
 
-        let dz = (end.z - start.z) / (dx.max(dy.abs()) as f32);
+        let max_step = dx.max(dy.abs()) as f32;
+
+        let dz = if max_step == 0.0 {
+            0.0
+        } else {
+            (end.z - start.z) / max_step
+        };
         let mut z = start.z - 0.001; // Offset z value by bias to prevent z-fighting
 
         let mut err = dx + dy;

@@ -51,7 +51,7 @@ impl Color {
         let r = ((hex >> 16) & 0xFF) as u8;
         let g = ((hex >> 8) & 0xFF) as u8;
         let b = (hex & 0xFF) as u8;
-        let a = 255 as u8;
+        let a = 255_u8;
 
         Self::from_rgba(r, g, b, a)
     }
@@ -63,12 +63,16 @@ impl Default for Color {
     }
 }
 
+#[expect(
+    clippy::cast_sign_loss,
+    reason = "Values are clamped to the interval [0.0, 1.0]"
+)]
 impl From<Color> for u32 {
     fn from(value: Color) -> Self {
-        let r = (value.r * 255.0) as u32;
-        let g = (value.g * 255.0) as u32;
-        let b = (value.b * 255.0) as u32;
-        let a = (value.a * 255.0) as u32;
+        let r = (value.r * 255.0).round() as u32;
+        let g = (value.g * 255.0).round() as u32;
+        let b = (value.b * 255.0).round() as u32;
+        let a = (value.a * 255.0).round() as u32;
 
         (a << 24) | (r << 16) | (g << 8) | b
     }
@@ -110,5 +114,13 @@ impl Mul for Color {
             self.b * rhs.b,
             self.a * rhs.a,
         )
+    }
+}
+
+impl Mul<f32> for Color {
+    type Output = Self;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Self::new(self.r * rhs, self.g * rhs, self.b * rhs, self.a)
     }
 }
