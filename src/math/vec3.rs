@@ -1,5 +1,7 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+use crate::Vec4;
+
 /// A 3-dimensional vector.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec3 {
@@ -47,6 +49,11 @@ impl Vec3 {
     /// Returns `self` normalized to length 1.0.
     pub fn normalize(self) -> Self {
         self / self.length()
+    }
+
+    /// Returns `self` in homogeneous coordinates.
+    pub fn to_homogeneous(self) -> Vec4 {
+        Vec4::new(self.x, self.y, self.z, 1.0)
     }
 }
 

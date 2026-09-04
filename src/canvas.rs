@@ -16,7 +16,7 @@ impl Canvas {
     /// Creates a new `Canvas`.
     ///
     /// `color_buffer` is initialized with all pixels set to black, while
-    /// `depth_buffer` is initialized with all values set to negative infinity.
+    /// `depth_buffer` is initialized with all values set to 1.0.
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
@@ -25,7 +25,7 @@ impl Canvas {
                 Color::BLACK.into();
                 (width as usize).checked_mul(height as usize).unwrap()
             ],
-            depth_buffer: vec![f32::NEG_INFINITY; (width * height) as usize],
+            depth_buffer: vec![1.0; (width * height) as usize],
         }
     }
 
@@ -54,7 +54,7 @@ impl Canvas {
     /// Resets `depth_buffer` by setting every value to infinity.
     pub fn clear_depth(&mut self) {
         for elem in self.depth_buffer.iter_mut() {
-            *elem = f32::NEG_INFINITY;
+            *elem = 1.0;
         }
     }
 
@@ -90,7 +90,7 @@ impl Canvas {
         let y = y.round() as i32;
 
         if let Some(index) = self.buffer_index(x, y)
-            && z >= self.depth_buffer[index]
+            && z <= self.depth_buffer[index]
         {
             self.depth_buffer[index] = z;
             self.color_buffer[index] = color.into();
@@ -103,7 +103,7 @@ impl Canvas {
     #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
     fn set_pixel_i32(&mut self, x: i32, y: i32, z: f32, color: Color) {
         if let Some(index) = self.buffer_index(x, y)
-            && z >= self.depth_buffer[index]
+            && z <= self.depth_buffer[index]
         {
             self.depth_buffer[index] = z;
             self.color_buffer[index] = color.into();
@@ -127,7 +127,7 @@ impl Canvas {
         let y_step = if y < y_end { 1 } else { -1 };
 
         let dz = (end.z - start.z) / (dx.max(dy.abs()) as f32);
-        let mut z = start.z;
+        let mut z = start.z - 0.001; // Offset z value by bias to prevent z-fighting
 
         let mut err = dx + dy;
 
@@ -225,6 +225,8 @@ impl Canvas {
     }
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
+    ///
+    /// Use counter-clockwise winding for front faces. Triangles with clockwise winding are culled.
     pub fn draw_triangle_filled(&mut self, a: Vec3, b: Vec3, c: Vec3, color: Color) {
         // Back-face culling
         let ab_edge = b - a;
