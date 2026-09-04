@@ -1,4 +1,4 @@
-use crate::{Mat2, Vec2, Vec3, color::Color};
+use crate::{Mat2, Vec2, Vec3, camera::ScreenVertex, color::Color};
 
 /// A 3-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
@@ -16,7 +16,7 @@ impl Canvas {
     /// Creates a new `Canvas`.
     ///
     /// `color_buffer` is initialized with all pixels set to black, while
-    /// `depth_buffer` is initialized with all values set to 1.0.
+    /// `depth_buffer` is initialized with all values set to 0.0.
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
@@ -25,7 +25,7 @@ impl Canvas {
                 Color::BLACK.into();
                 (width as usize).checked_mul(height as usize).unwrap()
             ],
-            depth_buffer: vec![1.0; (width * height) as usize],
+            depth_buffer: vec![0.0; (width * height) as usize],
         }
     }
 
@@ -46,19 +46,15 @@ impl Canvas {
 
     /// Clears `color_buffer` by setting every pixel to `color`.
     pub fn clear(&mut self, color: Color) {
-        for elem in self.color_buffer.iter_mut() {
-            *elem = color.into();
-        }
+        self.color_buffer.fill(color.into());
     }
 
-    /// Resets `depth_buffer` by setting every value to infinity.
+    /// Resets `depth_buffer` by setting every value to 0.0.
     pub fn clear_depth(&mut self) {
-        for elem in self.depth_buffer.iter_mut() {
-            *elem = 1.0;
-        }
+        self.depth_buffer.fill(0.0);
     }
 
-    /// Converts Cartesian coordinates to framebuffer index.
+    /// Translates Cartesian coordinates to framebuffer index.
     ///
     /// Returns `None` if outside the Canvas bounds.
     fn buffer_index(&self, x: i32, y: i32) -> Option<usize> {
@@ -82,28 +78,11 @@ impl Canvas {
 
     /// Sets the pixel at `(x, y)` to the given `color`.
     ///
-    /// Coordinates are rounded to the nearest integer.
-    /// Pixels outside the Canvas bounds are discarded.
-    #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
-    pub fn set_pixel(&mut self, x: f32, y: f32, z: f32, color: Color) {
-        let x = x.round() as i32;
-        let y = y.round() as i32;
-
-        if let Some(index) = self.buffer_index(x, y)
-            && z <= self.depth_buffer[index]
-        {
-            self.depth_buffer[index] = z;
-            self.color_buffer[index] = color.into();
-        }
-    }
-
-    /// Sets the pixel at `(x, y)` to the given `color`.
-    ///
     /// Pixels outside the Canvas bounds are discarded.
     #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
     fn set_pixel_i32(&mut self, x: i32, y: i32, z: f32, color: Color) {
         if let Some(index) = self.buffer_index(x, y)
-            && z <= self.depth_buffer[index]
+            && z >= self.depth_buffer[index]
         {
             self.depth_buffer[index] = z;
             self.color_buffer[index] = color.into();
@@ -113,7 +92,10 @@ impl Canvas {
     /// Draws a line from `start` to `end`.
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
-    pub fn draw_line(&mut self, start: Vec3, end: Vec3, color: Color) {
+    pub fn draw_line(&mut self, start: ScreenVertex, end: ScreenVertex, color: Color) {
+        let start = start.position();
+        let end = end.position();
+
         let mut x = start.x.round() as i32;
         let mut y = start.y.round() as i32;
 
@@ -160,7 +142,9 @@ impl Canvas {
     /// Draws an outline of a circle with the given `radius`, centered at `center`.
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
-    pub fn draw_circle(&mut self, center: Vec3, radius: f32, color: Color) {
+    pub fn draw_circle(&mut self, center: ScreenVertex, radius: f32, color: Color) {
+        let center = center.position();
+
         let x_cen = center.x.round() as i32;
         let y_cen = center.y.round() as i32;
         let z = center.z;
@@ -190,7 +174,9 @@ impl Canvas {
     }
 
     /// Draws a filled circle with the given `radius`, centered at `center`.
-    pub fn draw_circle_filled(&mut self, center: Vec3, radius: f32, color: Color) {
+    pub fn draw_circle_filled(&mut self, center: ScreenVertex, radius: f32, color: Color) {
+        let center = center.position();
+
         let x_cen = center.x.round() as i32;
         let y_cen = center.y.round() as i32;
         let z = center.z;
@@ -224,7 +210,13 @@ impl Canvas {
     }
 
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
-    pub fn draw_triangle(&mut self, a: Vec3, b: Vec3, c: Vec3, color: Color) {
+    pub fn draw_triangle(
+        &mut self,
+        a: ScreenVertex,
+        b: ScreenVertex,
+        c: ScreenVertex,
+        color: Color,
+    ) {
         self.draw_line(a, b, color);
         self.draw_line(b, c, color);
         self.draw_line(c, a, color);
@@ -233,7 +225,15 @@ impl Canvas {
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
     ///
     /// Use counter-clockwise winding for front faces. Triangles with clockwise winding are culled.
-    pub fn draw_triangle_filled(&mut self, a: Vec3, b: Vec3, c: Vec3, color: Color) {
+    pub fn draw_triangle_filled(
+        &mut self,
+        a: ScreenVertex,
+        b: ScreenVertex,
+        c: ScreenVertex,
+        color: Color,
+    ) {
+        let (a, b, c) = (a.position(), b.position(), c.position());
+
         // Back-face culling
         let ab_edge = b - a;
         let ac_edge = c - a;
@@ -265,7 +265,7 @@ impl Canvas {
                     && (weights.y >= -1e-5)
                     && (weights.x + weights.y <= 1.0 + 1e-5)
                 {
-                    let z = weights.x * a.z + weights.y * b.z + weights.z * c.z;
+                    let z = 1.0 / (weights.x * a.z + weights.y * b.z + weights.z * c.z);
                     self.set_pixel_i32(x, y, z, color);
                 }
             }
