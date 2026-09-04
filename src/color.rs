@@ -1,3 +1,5 @@
+use std::ops::{Add, Mul, Sub};
+
 /// A color represented by red, green, blue, alpha.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Color {
@@ -36,32 +38,77 @@ impl Color {
 
     /// Creates a `Color` with `rgba` components between 0 and 255.
     pub const fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Self::new(
-            r as f32 / 255.0,
-            g as f32 / 255.0,
-            b as f32 / 255.0,
-            a as f32 / 255.0,
-        )
+        let r = r as f32 / 255.0;
+        let g = g as f32 / 255.0;
+        let b = b as f32 / 255.0;
+        let a = a as f32 / 255.0;
+
+        Self { r, g, b, a }
     }
 
-    /// Creates a `Color` from a u32 (`0xRRGGBB`) with alpha defaulting to 1.0.
+    /// Creates a `Color` from a u32 (`0xRRGGBB`) with alpha set to 1.0.
     pub const fn from_hex(hex: u32) -> Self {
-        Self::from_rgba(
-            ((hex >> 16) & 0xFF) as u8,
-            ((hex >> 8) & 0xFF) as u8,
-            (hex & 0xFF) as u8,
-            255,
-        )
+        let r = ((hex >> 16) & 0xFF) as u8;
+        let g = ((hex >> 8) & 0xFF) as u8;
+        let b = (hex & 0xFF) as u8;
+        let a = 255 as u8;
+
+        Self::from_rgba(r, g, b, a)
+    }
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Self::new(1.0, 1.0, 1.0, 1.0)
     }
 }
 
 impl From<Color> for u32 {
     fn from(value: Color) -> Self {
-        let a = (value.a * 255.0) as u32;
         let r = (value.r * 255.0) as u32;
         let g = (value.g * 255.0) as u32;
         let b = (value.b * 255.0) as u32;
+        let a = (value.a * 255.0) as u32;
 
         (a << 24) | (r << 16) | (g << 8) | b
+    }
+}
+
+impl Add for Color {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::new(
+            self.r + rhs.r,
+            self.g + rhs.g,
+            self.b + rhs.b,
+            self.a + rhs.a,
+        )
+    }
+}
+
+impl Sub for Color {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::new(
+            self.r - rhs.r,
+            self.g - rhs.g,
+            self.b - rhs.b,
+            self.a - rhs.a,
+        )
+    }
+}
+
+impl Mul for Color {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self::new(
+            self.r * rhs.r,
+            self.g * rhs.g,
+            self.b * rhs.b,
+            self.a * rhs.a,
+        )
     }
 }
