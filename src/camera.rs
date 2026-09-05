@@ -126,7 +126,7 @@ impl Camera {
     ///
     /// The view matrix transforms coordinates from world space into view space.
     pub fn view_matrix(&self) -> Mat4 {
-        Mat4::look_at(
+        Mat4::view(
             self.position,
             self.position + self.local_forward(),
             self.local_up(),

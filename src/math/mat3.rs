@@ -70,7 +70,7 @@ impl Mat3 {
         )
     }
 
-    /// Returns a `Mat3` scaling matrix.
+    /// Returns a scaling matrix.
     pub fn scale(v: Vec2) -> Self {
         Self::new(
             Vec3::new(v.x, 0.0, 0.0),
@@ -79,7 +79,7 @@ impl Mat3 {
         )
     }
 
-    /// Returns a `Mat3` translation matrix.
+    /// Returns a translation matrix.
     pub fn translate(v: Vec2) -> Self {
         Self::new(
             Vec3::new(1.0, 0.0, 0.0),
@@ -88,7 +88,7 @@ impl Mat3 {
         )
     }
 
-    /// Returns a `Mat3` rotation matrix around the X-axis.
+    /// Returns a rotation matrix around the X-axis.
     ///
     /// `angle` is in radians.
     pub fn rotate_x(angle: f32) -> Self {
@@ -99,7 +99,7 @@ impl Mat3 {
         )
     }
 
-    /// Returns a `Mat3` rotation matrix around the Y-axis.
+    /// Returns a rotation matrix around the Y-axis.
     ///
     /// `angle` is in radians.
     pub fn rotate_y(angle: f32) -> Self {
@@ -110,7 +110,7 @@ impl Mat3 {
         )
     }
 
-    /// Returns a `Mat3` rotation matrix around the Z-axis.
+    /// Returns a rotation matrix around the Z-axis.
     ///
     /// `angle` is in radians.
     pub fn rotate_z(angle: f32) -> Self {

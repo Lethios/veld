@@ -47,7 +47,7 @@ impl Mat4 {
         )
     }
 
-    /// Returns a `Mat4` scaling matrix.
+    /// Returns a scaling matrix.
     pub fn scale(v: Vec3) -> Self {
         Self::new(
             Vec4::new(v.x, 0.0, 0.0, 0.0),
@@ -57,7 +57,7 @@ impl Mat4 {
         )
     }
 
-    /// Returns a `Mat4` translation matrix.
+    /// Returns a translation matrix.
     pub fn translate(v: Vec3) -> Self {
         Self::new(
             Vec4::new(1.0, 0.0, 0.0, 0.0),
@@ -67,7 +67,7 @@ impl Mat4 {
         )
     }
 
-    /// Returns a `Mat4` rotation matrix around the X-axis.
+    /// Returns a rotation matrix around the X-axis.
     ///
     /// `angle` is in radians.
     pub fn rotate_x(angle: f32) -> Self {
@@ -79,7 +79,7 @@ impl Mat4 {
         )
     }
 
-    /// Returns a `Mat4` rotation matrix around the Y-axis.
+    /// Returns a rotation matrix around the Y-axis.
     ///
     /// `angle` is in radians.
     pub fn rotate_y(angle: f32) -> Self {
@@ -91,7 +91,7 @@ impl Mat4 {
         )
     }
 
-    /// Returns a `Mat4` rotation matrix around the Z-axis.
+    /// Returns a rotation matrix around the Z-axis.
     ///
     /// `angle` is in radians.
     pub fn rotate_z(angle: f32) -> Self {
@@ -104,7 +104,7 @@ impl Mat4 {
     }
 
     /// Returns a view matrix.
-    pub fn look_at(position: Vec3, target: Vec3, up: Vec3) -> Self {
+    pub fn view(position: Vec3, target: Vec3, up: Vec3) -> Self {
         let forward = (target - position).normalize();
         let right = forward.cross(up).normalize();
         let up = forward.cross(right).normalize();
