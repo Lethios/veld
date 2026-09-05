@@ -104,19 +104,19 @@ impl Mat4 {
     }
 
     /// Returns a view matrix.
-    pub fn view(position: Vec3, target: Vec3, up: Vec3) -> Self {
-        let forward = (target - position).normalize();
-        let right = forward.cross(up).normalize();
+    pub fn view(position: Vec3, target: Vec3, world_up: Vec3) -> Self {
+        let forward = (position - target).normalize();
+        let right = world_up.cross(forward).normalize();
         let up = forward.cross(right).normalize();
 
         Mat4::new(
-            Vec4::new(right.x, up.x, -forward.x, 0.0),
-            Vec4::new(right.y, up.y, -forward.y, 0.0),
-            Vec4::new(right.z, up.z, -forward.z, 0.0),
+            Vec4::new(right.x, up.x, forward.x, 0.0),
+            Vec4::new(right.y, up.y, forward.y, 0.0),
+            Vec4::new(right.z, up.z, forward.z, 0.0),
             Vec4::new(
                 -right.dot(position),
                 -up.dot(position),
-                forward.dot(position),
+                -forward.dot(position),
                 1.0,
             ),
         )

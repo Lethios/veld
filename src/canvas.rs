@@ -25,7 +25,7 @@ impl Canvas {
                 Color::BLACK.into();
                 (width as usize).checked_mul(height as usize).unwrap()
             ],
-            depth_buffer: vec![0.0; (width * height) as usize],
+            depth_buffer: vec![1.0; (width * height) as usize],
         }
     }
 
@@ -51,7 +51,7 @@ impl Canvas {
 
     /// Resets `depth_buffer` by setting every value to 0.0.
     pub fn clear_depth(&mut self) {
-        self.depth_buffer.fill(0.0);
+        self.depth_buffer.fill(1.0);
     }
 
     /// Translates Cartesian coordinates to framebuffer index.
@@ -82,7 +82,7 @@ impl Canvas {
     #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
     fn set_pixel_i32(&mut self, x: i32, y: i32, z: f32, color: Color) {
         if let Some(index) = self.buffer_index(x, y)
-            && z >= self.depth_buffer[index]
+            && z <= self.depth_buffer[index]
         {
             self.depth_buffer[index] = z;
             self.color_buffer[index] = color.into();
@@ -93,8 +93,8 @@ impl Canvas {
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_line(&mut self, start: ScreenVertex, end: ScreenVertex, color: Color) {
-        let start = start.position();
-        let end = end.position();
+        let (start, z_start) = (start.position(), start.depth());
+        let (end, z_end) = (end.position(), end.depth());
 
         let mut x = start.x.round() as i32;
         let mut y = start.y.round() as i32;
@@ -113,9 +113,9 @@ impl Canvas {
         let dz = if max_step == 0.0 {
             0.0
         } else {
-            (end.z - start.z) / max_step
+            (z_end - z_start) / max_step
         };
-        let mut z = start.z - 0.001; // Offset z value by bias to prevent z-fighting
+        let mut z = z_start + 0.001; // Offset z value by bias to prevent z-fighting
 
         let mut err = dx + dy;
 
@@ -143,11 +143,10 @@ impl Canvas {
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_circle(&mut self, center: ScreenVertex, radius: f32, color: Color) {
-        let center = center.position();
+        let (center, z) = (center.position(), center.depth());
 
         let x_cen = center.x.round() as i32;
         let y_cen = center.y.round() as i32;
-        let z = center.z;
         let radius = radius.round() as i32;
 
         let mut x = -radius;
@@ -175,11 +174,10 @@ impl Canvas {
 
     /// Draws a filled circle with the given `radius`, centered at `center`.
     pub fn draw_circle_filled(&mut self, center: ScreenVertex, radius: f32, color: Color) {
-        let center = center.position();
+        let (center, z) = (center.position(), center.depth());
 
         let x_cen = center.x.round() as i32;
         let y_cen = center.y.round() as i32;
-        let z = center.z;
         let radius = radius.round() as i32;
 
         let mut x = -radius;
@@ -223,8 +221,6 @@ impl Canvas {
     }
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
-    ///
-    /// Use counter-clockwise winding for front faces. Triangles with clockwise winding are culled.
     pub fn draw_triangle_filled(
         &mut self,
         a: ScreenVertex,
@@ -232,14 +228,9 @@ impl Canvas {
         c: ScreenVertex,
         color: Color,
     ) {
-        let (a, b, c) = (a.position(), b.position(), c.position());
-
-        // Back-face culling
-        let ab_edge = b - a;
-        let ac_edge = c - a;
-        if ab_edge.cross(ac_edge).z <= 0.0 {
-            return;
-        }
+        let (a, z_a) = (a.position(), a.depth());
+        let (b, z_b) = (b.position(), b.depth());
+        let (c, z_c) = (c.position(), c.depth());
 
         // Coordinates of bounding box
         let top_left = Vec2::new(a.x.min(b.x).min(c.x), a.y.max(b.y).max(c.y));
@@ -265,7 +256,7 @@ impl Canvas {
                     && (weights.y >= -1e-5)
                     && (weights.x + weights.y <= 1.0 + 1e-5)
                 {
-                    let z = 1.0 / (weights.x * a.z + weights.y * b.z + weights.z * c.z);
+                    let z = weights.x * z_a + weights.y * z_b + weights.z * z_c;
                     self.set_pixel_i32(x, y, z, color);
                 }
             }

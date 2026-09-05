@@ -1,4 +1,4 @@
-use crate::{Mat4, Vec3, Vec4};
+use crate::{Mat4, Vec2, Vec3, Vec4};
 
 /// The projection mode used by `Camera`.
 #[derive(Debug, Clone, Copy)]
@@ -17,12 +17,18 @@ pub enum Projection {
 ///
 /// Constructed by `Camera::ndc_to_screen()` to ensure valid coordinates.
 #[derive(Debug, Clone, Copy)]
-pub struct ScreenVertex(Vec3);
+pub struct ScreenVertex {
+    position: Vec2,
+    depth: f32,
+}
 
 impl ScreenVertex {
-    /// Returns the screen space position.
-    pub fn position(&self) -> Vec3 {
-        self.0
+    pub fn position(&self) -> Vec2 {
+        self.position
+    }
+
+    pub fn depth(&self) -> f32 {
+        self.depth
     }
 }
 
@@ -68,18 +74,22 @@ impl Camera {
         Vec3::new(
             self.pitch.cos() * self.yaw.sin(),
             self.pitch.sin(),
-            self.pitch.cos() * self.yaw.cos(),
+            -self.pitch.cos() * self.yaw.cos(),
         )
     }
 
     /// Returns the `Camera`'s right direction.
     pub fn local_right(&self) -> Vec3 {
-        Vec3::new(self.yaw.cos(), 0.0, -self.yaw.sin())
+        Vec3::new(self.yaw.cos(), 0.0, self.yaw.sin())
     }
 
     /// Returns the `Camera`'s up direction.
     pub fn local_up(&self) -> Vec3 {
-        self.local_right().cross(self.local_forward())
+        Vec3::new(
+            -self.pitch.sin() * self.yaw.sin(),
+            self.pitch.cos(),
+            self.pitch.sin() * self.yaw.cos(),
+        )
     }
 
     /// Moves `Camera` along its local forward axis.
@@ -129,7 +139,7 @@ impl Camera {
         Mat4::view(
             self.position,
             self.position + self.local_forward(),
-            self.local_up(),
+            Vec3::new(0.0, 1.0, 0.0),
         )
     }
 
@@ -184,11 +194,10 @@ impl Camera {
 
     /// Transforms normalized device coordinates (NDC) into screen space coordinates.
     pub fn ndc_to_screen(&self, ndc: Vec3, width: u32, height: u32) -> ScreenVertex {
-        ScreenVertex(Vec3::new(
-            ndc.x * width as f32 / 2.0,  // [-1.0, 1.0] -> [-width/2, width/2]
-            ndc.y * height as f32 / 2.0, // [-1.0, 1.0] -> [-height/2, height/2]
-            1.0 / (ndc.z * 0.5 + 0.5),   // [-1.0, 1.0] -> [0.0, 1.0]
-        ))
+        ScreenVertex {
+            position: Vec2::new(ndc.x * width as f32 / 2.0, ndc.y * height as f32 / 2.0),
+            depth: ndc.z,
+        }
     }
 
     /// Runs the full pipeline of transforming world space position into screen space coordinates.
@@ -205,11 +214,11 @@ impl Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self::new(
-            Vec3::new(0.0, 0.0, -10.0),
+            Vec3::new(0.0, 0.0, 10.0),
             0.0,
             0.0,
             Projection::Perspective {
-                fov: std::f32::consts::FRAC_PI_3,
+                fov: std::f32::consts::FRAC_PI_6,
             },
             0.1,
             1000.0,
