@@ -196,7 +196,7 @@ impl Camera {
     pub fn ndc_to_screen(&self, ndc: Vec3, width: u32, height: u32) -> ScreenVertex {
         ScreenVertex {
             position: Vec2::new(ndc.x * width as f32 / 2.0, ndc.y * height as f32 / 2.0),
-            depth: ndc.z,
+            depth: ndc.z * 0.5 + 0.5,
         }
     }
 
