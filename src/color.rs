@@ -121,6 +121,6 @@ impl Mul<f32> for Color {
     type Output = Self;
 
     fn mul(self, rhs: f32) -> Self::Output {
-        Self::new(self.r * rhs, self.g * rhs, self.b * rhs, self.a)
+        Self::new(self.r * rhs, self.g * rhs, self.b * rhs, self.a * rhs)
     }
 }

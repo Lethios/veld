@@ -6,7 +6,7 @@ pub struct Canvas {
     width: u32,
     /// Height of `Canvas` in pixels.
     height: u32,
-    /// Pixels are stored in `0xAARRGGBB` format (alpha will be ignored by the display backend).
+    /// Pixels are stored in `0xAARRGGBB` format.
     color_buffer: Vec<u32>,
     /// Negative values represent points farther away.
     depth_buffer: Vec<f32>,
@@ -16,17 +16,18 @@ impl Canvas {
     /// Creates a new `Canvas`.
     ///
     /// `color_buffer` is initialized with all pixels set to black, while
-    /// `depth_buffer` is initialized with all values set to 0.0.
-    pub fn new(width: u32, height: u32) -> Self {
-        Self {
+    /// `depth_buffer` is initialized with all values set to 1.0.
+    pub fn new(width: u32, height: u32) -> Result<Self, String> {
+        let size = (width as usize)
+            .checked_mul(height as usize)
+            .ok_or("Canvas dimensions are too large".to_string())?;
+
+        Ok(Self {
             width,
             height,
-            color_buffer: vec![
-                Color::BLACK.into();
-                (width as usize).checked_mul(height as usize).unwrap()
-            ],
-            depth_buffer: vec![1.0; (width * height) as usize],
-        }
+            color_buffer: vec![Color::BLACK.into(); size],
+            depth_buffer: vec![1.0; size],
+        })
     }
 
     /// Returns the width of `Canvas` in pixels.
@@ -49,7 +50,7 @@ impl Canvas {
         self.color_buffer.fill(color.into());
     }
 
-    /// Resets `depth_buffer` by setting every value to 0.0.
+    /// Resets `depth_buffer` by setting every value to 1.0.
     pub fn clear_depth(&mut self) {
         self.depth_buffer.fill(1.0);
     }
@@ -115,7 +116,8 @@ impl Canvas {
         } else {
             (z_end - z_start) / max_step
         };
-        let mut z = z_start + 0.001; // Offset z value by bias to prevent z-fighting
+        let z_bias = 0.001;
+        let mut z = z_start + z_bias; // Offset z value by bias to prevent z-fighting
 
         let mut err = dx + dy;
 
@@ -261,11 +263,5 @@ impl Canvas {
                 }
             }
         }
-    }
-}
-
-impl Default for Canvas {
-    fn default() -> Self {
-        Self::new(800, 600)
     }
 }
