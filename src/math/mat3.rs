@@ -88,28 +88,6 @@ impl Mat3 {
         )
     }
 
-    /// Returns a rotation matrix around the X-axis.
-    ///
-    /// `angle` is in radians.
-    pub fn rotate_x(angle: f32) -> Self {
-        Self::new(
-            Vec3::new(1.0, 0.0, 0.0),
-            Vec3::new(0.0, angle.cos(), angle.sin()),
-            Vec3::new(0.0, -angle.sin(), angle.cos()),
-        )
-    }
-
-    /// Returns a rotation matrix around the Y-axis.
-    ///
-    /// `angle` is in radians.
-    pub fn rotate_y(angle: f32) -> Self {
-        Self::new(
-            Vec3::new(angle.cos(), 0.0, -angle.sin()),
-            Vec3::new(0.0, 1.0, 0.0),
-            Vec3::new(angle.sin(), 0.0, angle.cos()),
-        )
-    }
-
     /// Returns a rotation matrix around the Z-axis.
     ///
     /// `angle` is in radians.

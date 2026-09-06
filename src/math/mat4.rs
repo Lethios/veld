@@ -47,6 +47,124 @@ impl Mat4 {
         )
     }
 
+    /// Returns the determinant of `self`.
+    pub fn determinant(&self) -> f32 {
+        let xx = self.x_axis.x;
+        let xy = self.x_axis.y;
+        let xz = self.x_axis.z;
+        let xw = self.x_axis.w;
+
+        let yx = self.y_axis.x;
+        let yy = self.y_axis.y;
+        let yz = self.y_axis.z;
+        let yw = self.y_axis.w;
+
+        let zx = self.z_axis.x;
+        let zy = self.z_axis.y;
+        let zz = self.z_axis.z;
+        let zw = self.z_axis.w;
+
+        let wx = self.w_axis.x;
+        let wy = self.w_axis.y;
+        let wz = self.w_axis.z;
+        let ww = self.w_axis.w;
+
+        xx * (yy * (zz * ww - zw * wz) - zy * (yz * ww - yw * wz) + wy * (yz * zw - zz * yw))
+            - yx * (xy * (zz * ww - zw * wz) - zy * (xz * ww - xw * wz) + wy * (xz * zw - zz * xw))
+            + zx * (xy * (yz * ww - yw * wz) - yy * (xz * ww - xw * wz) + wy * (xz * yw - yz * xw))
+            - wx * (xy * (yz * zw - zz * yw) - yy * (xz * zw - zz * xw) + zy * (xz * yw - yz * xw))
+    }
+
+    /// Returns the inverse of `self`.
+    pub fn inverse(&self) -> Option<Self> {
+        let m00 = self.x_axis.x;
+        let m01 = self.y_axis.x;
+        let m02 = self.z_axis.x;
+        let m03 = self.w_axis.x;
+
+        let m10 = self.x_axis.y;
+        let m11 = self.y_axis.y;
+        let m12 = self.z_axis.y;
+        let m13 = self.w_axis.y;
+
+        let m20 = self.x_axis.z;
+        let m21 = self.y_axis.z;
+        let m22 = self.z_axis.z;
+        let m23 = self.w_axis.z;
+
+        let m30 = self.x_axis.w;
+        let m31 = self.y_axis.w;
+        let m32 = self.z_axis.w;
+        let m33 = self.w_axis.w;
+
+        let a2323 = m22 * m33 - m23 * m32;
+        let a1323 = m21 * m33 - m23 * m31;
+        let a1223 = m21 * m32 - m22 * m31;
+        let a0323 = m20 * m33 - m23 * m30;
+        let a0223 = m20 * m32 - m22 * m30;
+        let a0123 = m20 * m31 - m21 * m30;
+
+        let a2313 = m12 * m33 - m13 * m32;
+        let a1313 = m11 * m33 - m13 * m31;
+        let a1213 = m11 * m32 - m12 * m31;
+
+        let a2312 = m12 * m23 - m13 * m22;
+        let a1312 = m11 * m23 - m13 * m21;
+        let a1212 = m11 * m22 - m12 * m21;
+
+        let a0313 = m10 * m33 - m13 * m30;
+        let a0213 = m10 * m32 - m12 * m30;
+        let a0312 = m10 * m23 - m13 * m20;
+        let a0212 = m10 * m22 - m12 * m20;
+        let a0113 = m10 * m31 - m11 * m30;
+        let a0112 = m10 * m21 - m11 * m20;
+
+        let det = m00 * (m11 * a2323 - m12 * a1323 + m13 * a1223)
+            - m01 * (m10 * a2323 - m12 * a0323 + m13 * a0223)
+            + m02 * (m10 * a1323 - m11 * a0323 + m13 * a0123)
+            - m03 * (m10 * a1223 - m11 * a0223 + m12 * a0123);
+
+        if det == 0.0 {
+            return None;
+        }
+
+        let det = 1.0 / det;
+
+        // These are the rows of the conventional inverse.
+        //
+        // We transpose them into columns when constructing our
+        // column-major Matrix4.
+        Some(Self {
+            x_axis: Vec4::new(
+                det * (m11 * a2323 - m12 * a1323 + m13 * a1223),
+                det * -(m10 * a2323 - m12 * a0323 + m13 * a0223),
+                det * (m10 * a1323 - m11 * a0323 + m13 * a0123),
+                det * -(m10 * a1223 - m11 * a0223 + m12 * a0123),
+            ),
+
+            y_axis: Vec4::new(
+                det * -(m01 * a2323 - m02 * a1323 + m03 * a1223),
+                det * (m00 * a2323 - m02 * a0323 + m03 * a0223),
+                det * -(m00 * a1323 - m01 * a0323 + m03 * a0123),
+                det * (m00 * a1223 - m01 * a0223 + m02 * a0123),
+            ),
+
+            z_axis: Vec4::new(
+                det * (m01 * a2313 - m02 * a1313 + m03 * a1213),
+                det * -(m00 * a2313 - m02 * a0313 + m03 * a0213),
+                det * (m00 * a1313 - m01 * a0313 + m03 * a0113),
+                det * -(m00 * a1312 - m01 * a0312 + m03 * a0112),
+            ),
+
+            w_axis: Vec4::new(
+                det * -(m01 * a2312 - m02 * a1312 + m03 * a1212),
+                det * (m00 * a2312 - m02 * a0312 + m03 * a0212),
+                det * -(m00 * a1312 - m01 * a0312 + m02 * a0112),
+                det * (m00 * a1212 - m01 * a0212 + m02 * a0112),
+            ),
+        })
+    }
+
     /// Returns a scaling matrix.
     pub fn scale(v: Vec3) -> Self {
         Self::new(
