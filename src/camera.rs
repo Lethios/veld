@@ -18,13 +18,18 @@ pub enum Projection {
 /// Constructed by `Camera::ndc_to_screen()` to ensure valid coordinates.
 #[derive(Debug, Clone, Copy)]
 pub struct ScreenVertex {
-    position: Vec2,
+    x: i32,
+    y: i32,
     depth: f32,
 }
 
 impl ScreenVertex {
-    pub fn position(&self) -> Vec2 {
-        self.position
+    fn new(x: i32, y: i32, depth: f32) -> Self {
+        Self { x, y, depth }
+    }
+
+    pub fn position(&self) -> (i32, i32) {
+        (self.x, self.y)
     }
 
     pub fn depth(&self) -> f32 {
@@ -194,10 +199,11 @@ impl Camera {
 
     /// Transforms normalized device coordinates (NDC) into screen space coordinates.
     pub fn ndc_to_screen(&self, ndc: Vec3, width: u32, height: u32) -> ScreenVertex {
-        ScreenVertex {
-            position: Vec2::new(ndc.x * width as f32 / 2.0, ndc.y * height as f32 / 2.0),
-            depth: ndc.z * 0.5 + 0.5,
-        }
+        let x = (ndc.x * width as f32 / 2.0).round() as i32;
+        let y = (ndc.y * height as f32 / 2.0).round() as i32;
+        let depth = ndc.z * 0.5 + 0.5;
+
+        ScreenVertex::new(x, y, depth)
     }
 
     /// Runs the full pipeline of transforming world space position into screen space coordinates.

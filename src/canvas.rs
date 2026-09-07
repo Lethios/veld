@@ -8,7 +8,7 @@ pub struct Canvas {
     height: u32,
     /// Pixels are stored in `0xAARRGGBB` format.
     color_buffer: Vec<u32>,
-    /// Negative values represent points farther away.
+    /// Positive values represent points farther away.
     depth_buffer: Vec<f32>,
 }
 
@@ -94,14 +94,13 @@ impl Canvas {
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_line(&mut self, start: ScreenVertex, end: ScreenVertex, color: Color) {
-        let (start, z_start) = (start.position(), start.depth());
-        let (end, z_end) = (end.position(), end.depth());
+        let (x_start, y_start) = start.position();
+        let z_start = start.depth();
+        let (x_end, y_end) = end.position();
+        let z_end = end.depth();
 
-        let mut x = start.x.round() as i32;
-        let mut y = start.y.round() as i32;
-
-        let x_end = end.x.round() as i32;
-        let y_end = end.y.round() as i32;
+        let mut x = x_start;
+        let mut y = y_start;
 
         let dx = (x_end - x).abs();
         let x_step = if x < x_end { 1 } else { -1 };
@@ -117,7 +116,7 @@ impl Canvas {
             (z_end - z_start) / max_step
         };
         let z_bias = 0.001;
-        let mut z = z_start + z_bias; // Offset z value by bias to prevent z-fighting
+        let mut z = z_start - z_bias; // Offset z value by bias to prevent z-fighting
 
         let mut err = dx + dy;
 
@@ -145,10 +144,9 @@ impl Canvas {
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_circle(&mut self, center: ScreenVertex, radius: f32, color: Color) {
-        let (center, z) = (center.position(), center.depth());
+        let (x_cen, y_cen) = center.position();
+        let z = center.depth();
 
-        let x_cen = center.x.round() as i32;
-        let y_cen = center.y.round() as i32;
         let radius = radius.round() as i32;
 
         let mut x = -radius;
@@ -176,10 +174,9 @@ impl Canvas {
 
     /// Draws a filled circle with the given `radius`, centered at `center`.
     pub fn draw_circle_filled(&mut self, center: ScreenVertex, radius: f32, color: Color) {
-        let (center, z) = (center.position(), center.depth());
+        let (x_cen, y_cen) = center.position();
+        let z = center.depth();
 
-        let x_cen = center.x.round() as i32;
-        let y_cen = center.y.round() as i32;
         let radius = radius.round() as i32;
 
         let mut x = -radius;
@@ -230,17 +227,17 @@ impl Canvas {
         c: ScreenVertex,
         color: Color,
     ) {
-        let (a, z_a) = (a.position(), a.depth());
-        let (b, z_b) = (b.position(), b.depth());
-        let (c, z_c) = (c.position(), c.depth());
+        let ((ax, ay), az) = (a.position(), a.depth());
+        let ((bx, by), bz) = (b.position(), b.depth());
+        let ((cx, cy), cz) = (c.position(), c.depth());
 
         // Coordinates of bounding box
-        let top_left = Vec2::new(a.x.min(b.x).min(c.x), a.y.max(b.y).max(c.y));
-        let bottom_right = Vec2::new(a.x.max(b.x).max(c.x), a.y.min(b.y).min(c.y));
+        let top_left = (ax.min(bx).min(cx), ay.max(by).max(cy));
+        let bottom_right = (ax.max(bx).max(cx), ay.min(by).min(cy));
 
         let inverse = match Mat2::new(
-            Vec2::new(b.x - a.x, b.y - a.y),
-            Vec2::new(c.x - a.x, c.y - a.y),
+            Vec2::new((bx - ax) as f32, (by - ay) as f32),
+            Vec2::new((cx - ax) as f32, (cy - ay) as f32),
         )
         .inverse()
         {
@@ -249,16 +246,16 @@ impl Canvas {
         };
 
         // Test for each pixel in the bounding box
-        for x in (top_left.x.round() as i32)..=(bottom_right.x.round() as i32) {
-            for y in (bottom_right.y.round() as i32)..=(top_left.y.round() as i32) {
-                let weights = inverse * Vec2::new(x as f32 - a.x, y as f32 - a.y);
+        for x in top_left.0..=bottom_right.0 {
+            for y in bottom_right.1..=top_left.1 {
+                let weights = inverse * Vec2::new((x - ax) as f32, (y - ay) as f32);
                 let weights = Vec3::new(weights.x, weights.y, 1.0 - weights.x - weights.y);
 
                 if (weights.x >= -1e-5)
                     && (weights.y >= -1e-5)
                     && (weights.x + weights.y <= 1.0 + 1e-5)
                 {
-                    let z = weights.x * z_a + weights.y * z_b + weights.z * z_c;
+                    let z = weights.x * az + weights.y * bz + weights.z * cz;
                     self.set_pixel_i32(x, y, z, color);
                 }
             }
