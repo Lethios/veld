@@ -58,7 +58,14 @@ impl Canvas {
     /// Translates Cartesian coordinates to framebuffer index.
     ///
     /// Returns `None` if outside the Canvas bounds.
-    fn buffer_index(&self, x: u32, y: u32) -> Option<usize> {
+    fn buffer_index(&self, x: i32, y: i32) -> Option<usize> {
+        if x < 0 || y < 0 || x >= self.width as i32 || y >= self.height as i32 {
+            return None;
+        }
+
+        let x = x.cast_unsigned();
+        let y = y.cast_unsigned();
+
         Some(((self.height - 1 - y) * self.width + x) as usize)
     }
 
@@ -66,8 +73,18 @@ impl Canvas {
     ///
     /// Pixels outside the Canvas bounds are discarded.
     #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
-    fn set_pixel(&mut self, x: f32, y: f32, depth: f32, color: Color) {
-        if let Some(index) = self.buffer_index(x.round() as u32, y.round() as u32)
+    pub fn set_pixel(&mut self, x: f32, y: f32, depth: f32, color: Color) {
+        if let Some(index) = self.buffer_index(x.round() as i32, y.round() as i32)
+            && depth <= self.depth_buffer[index]
+        {
+            self.depth_buffer[index] = depth;
+            self.color_buffer[index] = color.into();
+        }
+    }
+
+    #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
+    pub fn set_pixel_i32(&mut self, x: i32, y: i32, depth: f32, color: Color) {
+        if let Some(index) = self.buffer_index(x, y)
             && depth <= self.depth_buffer[index]
         {
             self.depth_buffer[index] = depth;
@@ -80,13 +97,46 @@ impl Canvas {
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_line(&mut self, start: ScreenPosition, end: ScreenPosition, color: Color) {}
 
+    pub fn draw_line_aa(&mut self, start: ScreenPosition, end: ScreenPosition, color: Color) {
+        let frac_part = |x: f32| -> f32 { x - x.floor() };
+
+        let steep = (end.y - start.y).abs() > (end.x - start.x).abs();
+        if steep {
+            std::mem::swap(&mut start.x, &mut start.y);
+            std::mem::swap(&mut end.x, &mut end.y);
+        }
+
+        if start.x > end.x {
+            std::mem::swap(&mut start.x, &mut end.x);
+            std::mem::swap(&mut start.y, &mut end.y);
+        }
+
+        let dx = end.x - start.x;
+        let dy = end.y - start.y;
+        let slope = if dx == 0.0 { 1.0 } else { dy / dx };
+
+        let start_x_pxl: i32;
+        {
+            let x = start.x.round();
+            let y = start.y + slope * (x - start.x);
+            let x_gap = 1.0 - frac_part(start.x + 0.5);
+
+            let start_x_pxl = x as i32;
+            let start_y_pxl = y.floor() as i32;
+
+            if steep {
+                self.set_pixel(x, y, depth, color);
+            }
+        }
+    }
+
     /// Draws an outline of a circle with the given `radius`, centered at `center`.
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
     pub fn draw_circle(&mut self, center: ScreenPosition, radius: f32, color: Color) {}
 
     /// Draws a filled circle with the given `radius`, centered at `center`.
-    pub fn draw_circle_filled(&mut self, center: ScreenPosition, radius: f32, color: Color) {}
+    pub fn fill_circle(&mut self, center: ScreenPosition, radius: f32, color: Color) {}
 
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
     pub fn draw_triangle(
@@ -99,7 +149,7 @@ impl Canvas {
     }
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
-    pub fn draw_triangle_filled(
+    pub fn fill_triangle(
         &mut self,
         a: ScreenPosition,
         b: ScreenPosition,
