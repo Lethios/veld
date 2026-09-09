@@ -59,10 +59,6 @@ impl Canvas {
     ///
     /// Returns `None` if outside the Canvas bounds.
     fn buffer_index(&self, x: u32, y: u32) -> Option<usize> {
-        if x < 0 || x >= self.width || y < 0 || y >= self.height {
-            return None;
-        }
-
         Some(((self.height - 1 - y) * self.width + x) as usize)
     }
 
@@ -82,106 +78,15 @@ impl Canvas {
     /// Draws a line from `start` to `end`.
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
-    pub fn draw_line(&mut self, start: ScreenPosition, end: ScreenPosition, color: Color) {
-        let mut x = start.x;
-        let mut y = start.y;
-
-        let dx = (end.x - x).abs();
-        let x_step = if x < end.x { 1.0 } else { -1.0 };
-
-        let dy = -(end.y - y).abs();
-        let y_step = if y < end.y { 1.0 } else { -1.0 };
-
-        let max_step = dx.max(dy.abs()) as f32;
-
-        let dz = if max_step == 0.0 {
-            0.0
-        } else {
-            (end.depth - start.depth) / max_step
-        };
-        let mut z = start.x;
-
-        let mut err = dx + dy;
-
-        loop {
-            self.set_pixel(x, y, z, color);
-
-            if (x_step > 0.0 && x >= end.x || x_step < 0.0 && x <= end.x)
-                && (y_step > 0.0 && y >= end.y || y_step < 0.0 && y <= end.y)
-            {
-                break;
-            }
-            if 2.0 * err >= dy {
-                err += dy;
-                x += x_step;
-            }
-            if 2.0 * err <= dx {
-                err += dx;
-                y += y_step;
-            }
-            z += dz;
-        }
-    }
+    pub fn draw_line(&mut self, start: ScreenPosition, end: ScreenPosition, color: Color) {}
 
     /// Draws an outline of a circle with the given `radius`, centered at `center`.
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
-    pub fn draw_circle(&mut self, center: ScreenPosition, radius: f32, color: Color) {
-        let radius = radius.round();
-
-        let mut x = -radius;
-        let mut y = 0.0;
-        let mut err = 2.0 - 2.0 * radius;
-
-        while x <= 0.0 {
-            self.set_pixel(center.x - x, center.y + y, center.depth, color);
-            self.set_pixel(center.x - y, center.y - x, center.depth, color);
-            self.set_pixel(center.x + x, center.y - y, center.depth, color);
-            self.set_pixel(center.x + y, center.y + x, center.depth, color);
-
-            let prev_err = err;
-
-            if prev_err <= y {
-                y += 1.0;
-                err += 2.0 * y + 1.0;
-            }
-            if (prev_err > x) || (err > y) {
-                x += 1.0;
-                err += 2.0 * x + 1.0;
-            }
-        }
-    }
+    pub fn draw_circle(&mut self, center: ScreenPosition, radius: f32, color: Color) {}
 
     /// Draws a filled circle with the given `radius`, centered at `center`.
-    pub fn draw_circle_filled(&mut self, center: ScreenPosition, radius: f32, color: Color) {
-        let radius = radius.round();
-
-        let mut x = -radius;
-        let mut y = 0.0;
-        let mut err = 2.0 - 2.0 * radius;
-
-        while x <= 0.0 {
-            for x_curr in (center.x - x).round() as u32..=(center.x + x).round() as u32 {
-                self.set_pixel(x_curr as f32, center.y + y, center.depth, color);
-                self.set_pixel(x_curr as f32, center.y - y, center.depth, color);
-            }
-            for x_curr in (center.x - y).round() as u32..=(center.x + y).round() as u32 {
-                self.set_pixel(x_curr as f32, center.y + x, center.depth, color);
-                self.set_pixel(x_curr as f32, center.y - x, center.depth, color);
-            }
-
-            let prev_err = err;
-
-            if prev_err <= y {
-                y += 1.0;
-                err += 2.0 * y + 1.0;
-            }
-            if (prev_err > x) || (err > y) {
-                x += 1.0;
-                err += 2.0 * x + 1.0;
-            }
-        }
-    }
+    pub fn draw_circle_filled(&mut self, center: ScreenPosition, radius: f32, color: Color) {}
 
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
     pub fn draw_triangle(
@@ -191,9 +96,6 @@ impl Canvas {
         c: ScreenPosition,
         color: Color,
     ) {
-        self.draw_line(a, b, color);
-        self.draw_line(b, c, color);
-        self.draw_line(c, a, color);
     }
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
@@ -204,40 +106,5 @@ impl Canvas {
         c: ScreenPosition,
         color: Color,
     ) {
-        // Coordinates of bounding box
-        let top_left = (
-            a.x.min(b.x).min(c.x).round() as u32,
-            a.y.max(b.y).max(c.y).round() as u32,
-        );
-        let bottom_right = (
-            a.x.max(b.x).max(c.x).round() as u32,
-            a.y.min(b.y).min(c.y).round() as u32,
-        );
-
-        let inverse = match Mat2::new(
-            Vec2::new((b.x - a.x) as f32, (b.y - a.y) as f32),
-            Vec2::new((c.x - a.x) as f32, (c.y - a.y) as f32),
-        )
-        .inverse()
-        {
-            Some(val) => val,
-            None => return,
-        };
-
-        // Test for each pixel in the bounding box
-        for x in top_left.0..=bottom_right.0 {
-            for y in bottom_right.1..=top_left.1 {
-                let weights = inverse * Vec2::new((x as f32 - a.x) as f32, (y as f32 - a.y) as f32);
-                let weights = Vec3::new(weights.x, weights.y, 1.0 - weights.x - weights.y);
-
-                if (weights.x >= -1e-5)
-                    && (weights.y >= -1e-5)
-                    && (weights.x + weights.y <= 1.0 + 1e-5)
-                {
-                    let z = weights.x * a.depth + weights.y * b.depth + weights.z * c.depth;
-                    self.set_pixel(x as f32, y as f32, z, color);
-                }
-            }
-        }
     }
 }
