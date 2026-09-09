@@ -1,4 +1,4 @@
-use crate::{Mat2, Vec2, Vec3, camera::ScreenVertex, color::Color};
+use crate::{Mat2, Vec2, Vec3, camera::ScreenPosition, color::Color};
 
 /// A 3-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
@@ -58,34 +58,23 @@ impl Canvas {
     /// Translates Cartesian coordinates to framebuffer index.
     ///
     /// Returns `None` if outside the Canvas bounds.
-    fn buffer_index(&self, x: i32, y: i32) -> Option<usize> {
-        let offset_width = self.width as i32 / 2 + x;
-        let offset_height = self.height as i32 / 2 - y;
-
-        // Bounds check
-        if offset_width < 0
-            || offset_width >= self.width as i32
-            || offset_height < 0
-            || offset_height >= self.height as i32
-        {
+    fn buffer_index(&self, x: u32, y: u32) -> Option<usize> {
+        if x < 0 || x >= self.width || y < 0 || y >= self.height {
             return None;
         }
 
-        let offset_width = offset_width.cast_unsigned();
-        let offset_height = offset_height.cast_unsigned();
-
-        Some((offset_height * self.width + offset_width) as usize)
+        Some(((self.height - 1 - y) * self.width + x) as usize)
     }
 
     /// Sets the pixel at `(x, y)` to the given `color`.
     ///
     /// Pixels outside the Canvas bounds are discarded.
     #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
-    fn set_pixel_i32(&mut self, x: i32, y: i32, z: f32, color: Color) {
-        if let Some(index) = self.buffer_index(x, y)
-            && z <= self.depth_buffer[index]
+    fn set_pixel(&mut self, x: f32, y: f32, depth: f32, color: Color) {
+        if let Some(index) = self.buffer_index(x.round() as u32, y.round() as u32)
+            && depth <= self.depth_buffer[index]
         {
-            self.depth_buffer[index] = z;
+            self.depth_buffer[index] = depth;
             self.color_buffer[index] = color.into();
         }
     }
@@ -93,46 +82,40 @@ impl Canvas {
     /// Draws a line from `start` to `end`.
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
-    pub fn draw_line(&mut self, start: ScreenVertex, end: ScreenVertex, color: Color) {
-        let (x_start, y_start) = start.position();
-        let z_start = start.depth();
-        let (x_end, y_end) = end.position();
-        let z_end = end.depth();
+    pub fn draw_line(&mut self, start: ScreenPosition, end: ScreenPosition, color: Color) {
+        let mut x = start.x;
+        let mut y = start.y;
 
-        let mut x = x_start;
-        let mut y = y_start;
+        let dx = (end.x - x).abs();
+        let x_step = if x < end.x { 1.0 } else { -1.0 };
 
-        let dx = (x_end - x).abs();
-        let x_step = if x < x_end { 1 } else { -1 };
-
-        let dy = -(y_end - y).abs();
-        let y_step = if y < y_end { 1 } else { -1 };
+        let dy = -(end.y - y).abs();
+        let y_step = if y < end.y { 1.0 } else { -1.0 };
 
         let max_step = dx.max(dy.abs()) as f32;
 
         let dz = if max_step == 0.0 {
             0.0
         } else {
-            (z_end - z_start) / max_step
+            (end.depth - start.depth) / max_step
         };
-        let z_bias = 0.001;
-        let mut z = z_start - z_bias; // Offset z value by bias to prevent z-fighting
+        let mut z = start.x;
 
         let mut err = dx + dy;
 
         loop {
-            self.set_pixel_i32(x, y, z, color);
+            self.set_pixel(x, y, z, color);
 
-            if (x_step > 0 && x >= x_end || x_step < 0 && x <= x_end)
-                && (y_step > 0 && y >= y_end || y_step < 0 && y <= y_end)
+            if (x_step > 0.0 && x >= end.x || x_step < 0.0 && x <= end.x)
+                && (y_step > 0.0 && y >= end.y || y_step < 0.0 && y <= end.y)
             {
                 break;
             }
-            if 2 * err >= dy {
+            if 2.0 * err >= dy {
                 err += dy;
                 x += x_step;
             }
-            if 2 * err <= dx {
+            if 2.0 * err <= dx {
                 err += dx;
                 y += y_step;
             }
@@ -143,65 +126,59 @@ impl Canvas {
     /// Draws an outline of a circle with the given `radius`, centered at `center`.
     ///
     /// Based on [Alois Zingl's implementation](https://zingl.github.io/bresenham.html).
-    pub fn draw_circle(&mut self, center: ScreenVertex, radius: f32, color: Color) {
-        let (x_cen, y_cen) = center.position();
-        let z = center.depth();
-
-        let radius = radius.round() as i32;
+    pub fn draw_circle(&mut self, center: ScreenPosition, radius: f32, color: Color) {
+        let radius = radius.round();
 
         let mut x = -radius;
-        let mut y = 0;
-        let mut err = 2 - 2 * radius;
+        let mut y = 0.0;
+        let mut err = 2.0 - 2.0 * radius;
 
-        while x <= 0 {
-            self.set_pixel_i32(x_cen - x, y_cen + y, z, color);
-            self.set_pixel_i32(x_cen - y, y_cen - x, z, color);
-            self.set_pixel_i32(x_cen + x, y_cen - y, z, color);
-            self.set_pixel_i32(x_cen + y, y_cen + x, z, color);
+        while x <= 0.0 {
+            self.set_pixel(center.x - x, center.y + y, center.depth, color);
+            self.set_pixel(center.x - y, center.y - x, center.depth, color);
+            self.set_pixel(center.x + x, center.y - y, center.depth, color);
+            self.set_pixel(center.x + y, center.y + x, center.depth, color);
 
             let prev_err = err;
 
             if prev_err <= y {
-                y += 1;
-                err += 2 * y + 1;
+                y += 1.0;
+                err += 2.0 * y + 1.0;
             }
             if (prev_err > x) || (err > y) {
-                x += 1;
-                err += 2 * x + 1;
+                x += 1.0;
+                err += 2.0 * x + 1.0;
             }
         }
     }
 
     /// Draws a filled circle with the given `radius`, centered at `center`.
-    pub fn draw_circle_filled(&mut self, center: ScreenVertex, radius: f32, color: Color) {
-        let (x_cen, y_cen) = center.position();
-        let z = center.depth();
-
-        let radius = radius.round() as i32;
+    pub fn draw_circle_filled(&mut self, center: ScreenPosition, radius: f32, color: Color) {
+        let radius = radius.round();
 
         let mut x = -radius;
-        let mut y = 0;
-        let mut err = 2 - 2 * radius;
+        let mut y = 0.0;
+        let mut err = 2.0 - 2.0 * radius;
 
-        while x <= 0 {
-            for x_curr in x_cen - x..=x_cen + x {
-                self.set_pixel_i32(x_curr, y_cen + y, z, color);
-                self.set_pixel_i32(x_curr, y_cen - y, z, color);
+        while x <= 0.0 {
+            for x_curr in (center.x - x).round() as u32..=(center.x + x).round() as u32 {
+                self.set_pixel(x_curr as f32, center.y + y, center.depth, color);
+                self.set_pixel(x_curr as f32, center.y - y, center.depth, color);
             }
-            for x_curr in x_cen - y..=x_cen + y {
-                self.set_pixel_i32(x_curr, y_cen + x, z, color);
-                self.set_pixel_i32(x_curr, y_cen - x, z, color);
+            for x_curr in (center.x - y).round() as u32..=(center.x + y).round() as u32 {
+                self.set_pixel(x_curr as f32, center.y + x, center.depth, color);
+                self.set_pixel(x_curr as f32, center.y - x, center.depth, color);
             }
 
             let prev_err = err;
 
             if prev_err <= y {
-                y += 1;
-                err += 2 * y + 1;
+                y += 1.0;
+                err += 2.0 * y + 1.0;
             }
             if (prev_err > x) || (err > y) {
-                x += 1;
-                err += 2 * x + 1;
+                x += 1.0;
+                err += 2.0 * x + 1.0;
             }
         }
     }
@@ -209,9 +186,9 @@ impl Canvas {
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
     pub fn draw_triangle(
         &mut self,
-        a: ScreenVertex,
-        b: ScreenVertex,
-        c: ScreenVertex,
+        a: ScreenPosition,
+        b: ScreenPosition,
+        c: ScreenPosition,
         color: Color,
     ) {
         self.draw_line(a, b, color);
@@ -222,22 +199,24 @@ impl Canvas {
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
     pub fn draw_triangle_filled(
         &mut self,
-        a: ScreenVertex,
-        b: ScreenVertex,
-        c: ScreenVertex,
+        a: ScreenPosition,
+        b: ScreenPosition,
+        c: ScreenPosition,
         color: Color,
     ) {
-        let ((ax, ay), az) = (a.position(), a.depth());
-        let ((bx, by), bz) = (b.position(), b.depth());
-        let ((cx, cy), cz) = (c.position(), c.depth());
-
         // Coordinates of bounding box
-        let top_left = (ax.min(bx).min(cx), ay.max(by).max(cy));
-        let bottom_right = (ax.max(bx).max(cx), ay.min(by).min(cy));
+        let top_left = (
+            a.x.min(b.x).min(c.x).round() as u32,
+            a.y.max(b.y).max(c.y).round() as u32,
+        );
+        let bottom_right = (
+            a.x.max(b.x).max(c.x).round() as u32,
+            a.y.min(b.y).min(c.y).round() as u32,
+        );
 
         let inverse = match Mat2::new(
-            Vec2::new((bx - ax) as f32, (by - ay) as f32),
-            Vec2::new((cx - ax) as f32, (cy - ay) as f32),
+            Vec2::new((b.x - a.x) as f32, (b.y - a.y) as f32),
+            Vec2::new((c.x - a.x) as f32, (c.y - a.y) as f32),
         )
         .inverse()
         {
@@ -248,15 +227,15 @@ impl Canvas {
         // Test for each pixel in the bounding box
         for x in top_left.0..=bottom_right.0 {
             for y in bottom_right.1..=top_left.1 {
-                let weights = inverse * Vec2::new((x - ax) as f32, (y - ay) as f32);
+                let weights = inverse * Vec2::new((x as f32 - a.x) as f32, (y as f32 - a.y) as f32);
                 let weights = Vec3::new(weights.x, weights.y, 1.0 - weights.x - weights.y);
 
                 if (weights.x >= -1e-5)
                     && (weights.y >= -1e-5)
                     && (weights.x + weights.y <= 1.0 + 1e-5)
                 {
-                    let z = weights.x * az + weights.y * bz + weights.z * cz;
-                    self.set_pixel_i32(x, y, z, color);
+                    let z = weights.x * a.depth + weights.y * b.depth + weights.z * c.depth;
+                    self.set_pixel(x as f32, y as f32, z, color);
                 }
             }
         }

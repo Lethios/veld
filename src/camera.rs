@@ -1,4 +1,4 @@
-use crate::{Mat4, Vec2, Vec3, Vec4};
+use crate::{Mat4, Vec3, Vec4};
 
 /// The projection mode used by `Camera`.
 #[derive(Debug, Clone, Copy)]
@@ -17,24 +17,10 @@ pub enum Projection {
 ///
 /// Constructed by `Camera::ndc_to_screen()` to ensure valid coordinates.
 #[derive(Debug, Clone, Copy)]
-pub struct ScreenVertex {
-    x: i32,
-    y: i32,
-    depth: f32,
-}
-
-impl ScreenVertex {
-    fn new(x: i32, y: i32, depth: f32) -> Self {
-        Self { x, y, depth }
-    }
-
-    pub fn position(&self) -> (i32, i32) {
-        (self.x, self.y)
-    }
-
-    pub fn depth(&self) -> f32 {
-        self.depth
-    }
+pub struct ScreenPosition {
+    pub x: f32,
+    pub y: f32,
+    pub depth: f32,
 }
 
 /// A camera defined by `position`, `yaw` and `pitch`.
@@ -183,7 +169,7 @@ impl Camera {
     ///
     /// Returns `None` if the point is behind the camera or outside the NDC bounds.
     pub fn clip_to_ndc(&self, clip: Vec4) -> Option<Vec3> {
-        if clip.w < 1e-6 {
+        if clip.w < f32::EPSILON {
             return None;
         }
 
@@ -198,16 +184,16 @@ impl Camera {
     }
 
     /// Transforms normalized device coordinates (NDC) into screen space coordinates.
-    pub fn ndc_to_screen(&self, ndc: Vec3, width: u32, height: u32) -> ScreenVertex {
-        let x = (ndc.x * width as f32 / 2.0).round() as i32;
-        let y = (ndc.y * height as f32 / 2.0).round() as i32;
+    pub fn ndc_to_screen(&self, ndc: Vec3, width: u32, height: u32) -> ScreenPosition {
+        let x = (ndc.x + 1.0) / 2.0 * width as f32;
+        let y = (ndc.y + 1.0) / 2.0 * height as f32;
         let depth = ndc.z * 0.5 + 0.5;
 
-        ScreenVertex::new(x, y, depth)
+        ScreenPosition { x, y, depth }
     }
 
     /// Runs the full pipeline of transforming world space position into screen space coordinates.
-    pub fn project(&self, world: Vec3, width: u32, height: u32) -> Option<ScreenVertex> {
+    pub fn project(&self, world: Vec3, width: u32, height: u32) -> Option<ScreenPosition> {
         let camera = self.world_to_camera(world);
         let clip = self.camera_to_clip(camera, width, height);
         let ndc = self.clip_to_ndc(clip)?;
@@ -224,7 +210,7 @@ impl Default for Camera {
             0.0,
             0.0,
             Projection::Perspective {
-                fov: std::f32::consts::FRAC_PI_6,
+                fov: std::f32::consts::FRAC_PI_4,
             },
             0.1,
             1000.0,
