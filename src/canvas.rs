@@ -95,12 +95,6 @@ impl Canvas {
     /// Draws a line from `start` to `end`.
     pub fn draw_line(&mut self, start: ScreenPosition, end: ScreenPosition, color: Color) {}
 
-    /// Draws an outline of a circle with the given `radius`, centered at `center`.
-    pub fn draw_circle(&mut self, center: ScreenPosition, radius: f32, color: Color) {}
-
-    /// Draws a filled circle with the given `radius`, centered at `center`.
-    pub fn fill_circle(&mut self, center: ScreenPosition, radius: f32, color: Color) {}
-
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
     pub fn draw_triangle(
         &mut self,

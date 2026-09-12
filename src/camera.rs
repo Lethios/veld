@@ -126,7 +126,7 @@ impl Camera {
     /// Returns the `Camera`'s view matrix.
     ///
     /// The view matrix transforms coordinates from world space into view space.
-    pub fn view_matrix(&self) -> Mat4 {
+    fn view_matrix(&self) -> Mat4 {
         Mat4::view(
             self.position,
             self.position + self.local_forward(),
@@ -137,7 +137,7 @@ impl Camera {
     /// Returns the `Camera`'s projection matrix.
     ///
     /// The projection matrix transforms coordinates from view space into clip space.
-    pub fn projection_matrix(&self, width: u32, height: u32) -> Mat4 {
+    fn projection_matrix(&self, width: u32, height: u32) -> Mat4 {
         let aspect = width as f32 / height as f32;
 
         match self.projection {
@@ -154,21 +154,21 @@ impl Camera {
     }
 
     /// Transforms a point from world space into camera (view) space.
-    pub fn world_to_camera(&self, world: Vec3) -> Vec3 {
+    fn world_to_camera(&self, world: Vec3) -> Vec3 {
         let res = self.view_matrix() * world.to_homogeneous();
 
         Vec3::new(res.x, res.y, res.z)
     }
 
     /// Transforms a point from camera space into clip space.
-    pub fn camera_to_clip(&self, camera: Vec3, width: u32, height: u32) -> Vec4 {
+    fn camera_to_clip(&self, camera: Vec3, width: u32, height: u32) -> Vec4 {
         self.projection_matrix(width, height) * camera.to_homogeneous()
     }
 
     /// Transforms a point from clip space into normalized device coordinates (NDC).
     ///
     /// Returns `None` if the point is behind the camera or outside the NDC bounds.
-    pub fn clip_to_ndc(&self, clip: Vec4) -> Option<Vec3> {
+    fn clip_to_ndc(&self, clip: Vec4) -> Option<Vec3> {
         if clip.w < f32::EPSILON {
             return None;
         }
@@ -184,7 +184,7 @@ impl Camera {
     }
 
     /// Transforms normalized device coordinates (NDC) into screen space coordinates.
-    pub fn ndc_to_screen(&self, ndc: Vec3, width: u32, height: u32) -> ScreenPosition {
+    fn ndc_to_screen(&self, ndc: Vec3, width: u32, height: u32) -> ScreenPosition {
         let x = (ndc.x + 1.0) / 2.0 * width as f32;
         let y = (ndc.y + 1.0) / 2.0 * height as f32;
         let depth = ndc.z * 0.5 + 0.5;
