@@ -3,9 +3,9 @@ use crate::{Mat2, Vec2, Vec3, camera::ScreenPosition, color::Color};
 /// A 3-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
     /// Width of `Canvas` in pixels.
-    width: u32,
+    width: usize,
     /// Height of `Canvas` in pixels.
-    height: u32,
+    height: usize,
     /// Pixels are stored in `0xAARRGGBB` format.
     color_buffer: Vec<u32>,
     /// Positive values represent points farther away.
@@ -17,9 +17,9 @@ impl Canvas {
     ///
     /// `color_buffer` is initialized with all pixels set to black, while
     /// `depth_buffer` is initialized with all values set to 1.0.
-    pub fn new(width: u32, height: u32) -> Result<Self, String> {
-        let size = (width as usize)
-            .checked_mul(height as usize)
+    pub fn new(width: usize, height: usize) -> Result<Self, String> {
+        let size = width
+            .checked_mul(height)
             .ok_or("Canvas dimensions are too large".to_string())?;
 
         Ok(Self {
@@ -31,12 +31,12 @@ impl Canvas {
     }
 
     /// Returns the width of `Canvas` in pixels.
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> usize {
         self.width
     }
 
     /// Returns the height of `Canvas` in pixels.
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> usize {
         self.height
     }
 
@@ -66,7 +66,7 @@ impl Canvas {
         let x = x.cast_unsigned();
         let y = y.cast_unsigned();
 
-        Some(((self.height - 1 - y) * self.width + x) as usize)
+        Some((self.height - 1_usize - y as usize) * self.width + x as usize)
     }
 
     /// Sets the pixel at `(x, y)` to the given `color`.

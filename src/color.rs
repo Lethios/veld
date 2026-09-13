@@ -1,6 +1,6 @@
 use std::ops::{Add, Mul, Sub};
 
-/// A color represented by red, green, blue, alpha.
+/// A color represented by normalized red, green, blue and alpha components.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Color {
     /// Red channel value in the range [0.0, 1.0].
@@ -37,7 +37,7 @@ impl Color {
     }
 
     /// Creates a `Color` with `rgba` components between 0 and 255.
-    pub const fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+    pub const fn from_rgba8(r: u8, g: u8, b: u8, a: u8) -> Self {
         let r = r as f32 / 255.0;
         let g = g as f32 / 255.0;
         let b = b as f32 / 255.0;
@@ -53,7 +53,7 @@ impl Color {
         let b = (hex & 0xFF) as u8;
         let a = 255_u8;
 
-        Self::from_rgba(r, g, b, a)
+        Self::from_rgba8(r, g, b, a)
     }
 }
 
@@ -121,6 +121,6 @@ impl Mul<f32> for Color {
     type Output = Self;
 
     fn mul(self, rhs: f32) -> Self::Output {
-        Self::new(self.r * rhs, self.g * rhs, self.b * rhs, self.a)
+        Self::new(self.r * rhs, self.g * rhs, self.b * rhs, self.a * rhs)
     }
 }
