@@ -1,4 +1,4 @@
-use crate::{Mat2, Vec2, Vec3, camera::ScreenPosition, color::Color};
+use crate::{camera::ScreenPosition, color::Color};
 
 /// A 3-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
@@ -93,25 +93,64 @@ impl Canvas {
     }
 
     /// Draws a line from `start` to `end`.
-    pub fn draw_line(&mut self, start: ScreenPosition, end: ScreenPosition, color: Color) {}
+    pub fn draw_line(&mut self, start: ScreenPosition, end: ScreenPosition, color: Color) {
+        let mut x = start.x;
+        let mut y = start.y;
+
+        let dx = (end.x - x).abs();
+        let x_step = if x < end.x { 1.0 } else { -1.0 };
+
+        let dy = -(end.y - y).abs();
+        let y_step = if y < end.y { 1.0 } else { -1.0 };
+
+        let max_step = dx.max(dy.abs()) as f32;
+
+        let dz = if max_step == 0.0 {
+            0.0
+        } else {
+            (end.depth - start.depth) / max_step
+        };
+        let mut z = start.x;
+
+        let mut err = dx + dy;
+
+        loop {
+            self.set_pixel(x, y, z, color);
+
+            if (x_step > 0.0 && x >= end.x || x_step < 0.0 && x <= end.x)
+                && (y_step > 0.0 && y >= end.y || y_step < 0.0 && y <= end.y)
+            {
+                break;
+            }
+            if 2.0 * err >= dy {
+                err += dy;
+                x += x_step;
+            }
+            if 2.0 * err <= dx {
+                err += dx;
+                y += y_step;
+            }
+            z += dz;
+        }
+    }
 
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
     pub fn draw_triangle(
         &mut self,
-        a: ScreenPosition,
-        b: ScreenPosition,
-        c: ScreenPosition,
-        color: Color,
+        _a: ScreenPosition,
+        _b: ScreenPosition,
+        _c: ScreenPosition,
+        _color: Color,
     ) {
     }
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
     pub fn fill_triangle(
         &mut self,
-        a: ScreenPosition,
-        b: ScreenPosition,
-        c: ScreenPosition,
-        color: Color,
+        _a: ScreenPosition,
+        _b: ScreenPosition,
+        _c: ScreenPosition,
+        _color: Color,
     ) {
     }
 }
