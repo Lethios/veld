@@ -137,7 +137,7 @@ impl Camera {
     /// Returns the `Camera`'s projection matrix.
     ///
     /// The projection matrix transforms coordinates from view space into clip space.
-    fn projection_matrix(&self, width: u32, height: u32) -> Mat4 {
+    fn projection_matrix(&self, width: usize, height: usize) -> Mat4 {
         let aspect = width as f32 / height as f32;
 
         match self.projection {
@@ -161,7 +161,7 @@ impl Camera {
     }
 
     /// Transforms a point from camera space into clip space.
-    fn camera_to_clip(&self, camera: Vec3, width: u32, height: u32) -> Vec4 {
+    fn camera_to_clip(&self, camera: Vec3, width: usize, height: usize) -> Vec4 {
         self.projection_matrix(width, height) * camera.to_homogeneous()
     }
 
@@ -184,7 +184,7 @@ impl Camera {
     }
 
     /// Transforms normalized device coordinates (NDC) into screen space coordinates.
-    fn ndc_to_screen(&self, ndc: Vec3, width: u32, height: u32) -> ScreenPosition {
+    fn ndc_to_screen(&self, ndc: Vec3, width: usize, height: usize) -> ScreenPosition {
         let x = (ndc.x + 1.0) / 2.0 * width as f32;
         let y = (ndc.y + 1.0) / 2.0 * height as f32;
         let depth = ndc.z * 0.5 + 0.5;
@@ -193,7 +193,7 @@ impl Camera {
     }
 
     /// Runs the full pipeline of transforming world space position into screen space coordinates.
-    pub fn project(&self, world: Vec3, width: u32, height: u32) -> Option<ScreenPosition> {
+    pub fn project(&self, world: Vec3, width: usize, height: usize) -> Option<ScreenPosition> {
         let camera = self.world_to_camera(world);
         let clip = self.camera_to_clip(camera, width, height);
         let ndc = self.clip_to_ndc(clip)?;
