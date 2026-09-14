@@ -1,4 +1,4 @@
-use crate::{camera::ScreenPosition, color::Color};
+use crate::{Color, Vertex};
 
 /// A 3-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
@@ -41,7 +41,7 @@ impl Canvas {
     }
 
     /// Returns an immutable reference to `color_buffer`.
-    pub fn pixels(&self) -> &[u32] {
+    pub fn buffer(&self) -> &[u32] {
         &self.color_buffer
     }
 
@@ -73,17 +73,7 @@ impl Canvas {
     ///
     /// Pixels outside the Canvas bounds are discarded.
     #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
-    pub fn set_pixel(&mut self, x: f32, y: f32, depth: f32, color: Color) {
-        if let Some(index) = self.buffer_index(x.round() as i32, y.round() as i32)
-            && depth <= self.depth_buffer[index]
-        {
-            self.depth_buffer[index] = depth;
-            self.color_buffer[index] = color.to_u32_argb();
-        }
-    }
-
-    #[expect(clippy::indexing_slicing, reason = "Bounds are checked manually")]
-    pub fn set_pixel_i32(&mut self, x: i32, y: i32, depth: f32, color: Color) {
+    fn set_pixel(&mut self, x: i32, y: i32, depth: f32, color: Color) {
         if let Some(index) = self.buffer_index(x, y)
             && depth <= self.depth_buffer[index]
         {
@@ -92,65 +82,23 @@ impl Canvas {
         }
     }
 
-    /// Draws a line from `start` to `end`.
-    pub fn draw_line(&mut self, start: ScreenPosition, end: ScreenPosition, color: Color) {
-        let mut x = start.x;
-        let mut y = start.y;
+    /// Draws a single pixel at `point`.
+    pub fn draw_pixel(&mut self, point: Vertex) {
+        let (x, y, depth) = (
+            point.position.x.round() as i32,
+            point.position.x.round() as i32,
+            point.position.depth,
+        );
 
-        let dx = (end.x - x).abs();
-        let x_step = if x < end.x { 1.0 } else { -1.0 };
-
-        let dy = -(end.y - y).abs();
-        let y_step = if y < end.y { 1.0 } else { -1.0 };
-
-        let max_step = dx.max(dy.abs()) as f32;
-
-        let dz = if max_step == 0.0 {
-            0.0
-        } else {
-            (end.depth - start.depth) / max_step
-        };
-        let mut z = start.x;
-
-        let mut err = dx + dy;
-
-        loop {
-            self.set_pixel(x, y, z, color);
-
-            if (x_step > 0.0 && x >= end.x || x_step < 0.0 && x <= end.x)
-                && (y_step > 0.0 && y >= end.y || y_step < 0.0 && y <= end.y)
-            {
-                break;
-            }
-            if 2.0 * err >= dy {
-                err += dy;
-                x += x_step;
-            }
-            if 2.0 * err <= dx {
-                err += dx;
-                y += y_step;
-            }
-            z += dz;
-        }
+        self.set_pixel(x, y, depth, point.color);
     }
+
+    /// Draws a line from `start` to `end`.
+    pub fn draw_line(&mut self, _start: Vertex, _end: Vertex) {}
 
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
-    pub fn draw_triangle(
-        &mut self,
-        _a: ScreenPosition,
-        _b: ScreenPosition,
-        _c: ScreenPosition,
-        _color: Color,
-    ) {
-    }
+    pub fn draw_triangle(&mut self, _a: Vertex, _b: Vertex, _c: Vertex) {}
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
-    pub fn fill_triangle(
-        &mut self,
-        _a: ScreenPosition,
-        _b: ScreenPosition,
-        _c: ScreenPosition,
-        _color: Color,
-    ) {
-    }
+    pub fn fill_triangle(&mut self, _a: Vertex, _b: Vertex, _c: Vertex) {}
 }

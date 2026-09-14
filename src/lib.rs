@@ -2,6 +2,7 @@ pub mod camera;
 pub mod canvas;
 pub mod color;
 pub mod math;
+pub mod vertex;
 
 pub use camera::{Camera, Projection, ScreenPosition};
 pub use canvas::Canvas;
@@ -12,3 +13,4 @@ pub use math::Mat4;
 pub use math::Vec2;
 pub use math::Vec3;
 pub use math::Vec4;
+pub use vertex::Vertex;
