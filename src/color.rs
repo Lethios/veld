@@ -46,7 +46,7 @@ impl Color {
         Self { r, g, b, a }
     }
 
-    /// Creates a `Color` from a `u32` in `0xRRGGBBAA` format.
+    /// Creates a `Color` from a `u32` in `0xAARRGGBB` format.
     pub const fn from_hex(hex: u32) -> Self {
         let r = (hex >> 24) as u8;
         let g = (hex >> 16) as u8;
@@ -61,13 +61,27 @@ impl Color {
         clippy::cast_sign_loss,
         reason = "Components are guaranteed to be in the range [0.0, 1.0]"
     )]
-    pub const fn to_u32(self) -> u32 {
+    pub const fn to_u32_rgba(self) -> u32 {
         let r = (self.r * 255.0).round() as u32;
         let g = (self.g * 255.0).round() as u32;
         let b = (self.b * 255.0).round() as u32;
         let a = (self.a * 255.0).round() as u32;
 
         (r << 24) | (g << 16) | (b << 8) | a
+    }
+
+    /// Returns `Self` as a u32 in `0xAARRGGBB` format.
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "Components are guaranteed to be in the range [0.0, 1.0]"
+    )]
+    pub const fn to_u32_argb(self) -> u32 {
+        let r = (self.r * 255.0).round() as u32;
+        let g = (self.g * 255.0).round() as u32;
+        let b = (self.b * 255.0).round() as u32;
+        let a = (self.a * 255.0).round() as u32;
+
+        (a << 24) | (r << 16) | (g << 8) | b
     }
 }
 
