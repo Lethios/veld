@@ -86,7 +86,7 @@ impl Canvas {
     pub fn draw_pixel(&mut self, point: Vertex) {
         let (x, y, depth) = (
             point.position.x.round() as i32,
-            point.position.x.round() as i32,
+            point.position.y.round() as i32,
             point.position.depth,
         );
 
