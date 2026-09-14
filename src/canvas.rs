@@ -165,22 +165,41 @@ impl Canvas {
             dy23 * x2 - dx23 * y2,
             dy31 * x3 - dx31 * y3,
         );
-        let (mut cy1, mut cy2, mut cy3) = (
-            c1 + dx12 * y_min - dy12 * x_min,
-            c2 + dx23 * y_min - dy23 * x_min,
-            c3 + dx31 * y_min - dy31 * x_min,
-        );
 
         let area = c1 + c2 + c3;
         if area == 0.0 {
             return;
         }
 
+        let is_top_left = |dx: f32, dy: f32| -> bool {
+            if area > 0.0 {
+                dy < 0.0 || (dy == 0.0 && dx > 0.0)
+            } else {
+                dy > 0.0 || (dy == 0.0 && dx < 0.0)
+            }
+        };
+
+        let bias1 = if is_top_left(dx12, dy12) { 0.0 } else { -1e-4 };
+        let bias2 = if is_top_left(dx23, dy23) { 0.0 } else { -1e-4 };
+        let bias3 = if is_top_left(dx31, dy31) { 0.0 } else { -1e-4 };
+
+        let (mut cy1, mut cy2, mut cy3) = (
+            c1 + dx12 * y_min - dy12 * x_min,
+            c2 + dx23 * y_min - dy23 * x_min,
+            c3 + dx31 * y_min - dy31 * x_min,
+        );
+
         for y in (y_min.round() as i32)..=(y_max.round() as i32) {
             let (mut cx1, mut cx2, mut cx3) = (cy1, cy2, cy3);
 
             for x in (x_min.round() as i32)..=(x_max.round() as i32) {
-                if cx1 > 0.0 && cx2 > 0.0 && cx3 > 0.0 {
+                let inside = if area > 0.0 {
+                    cx1 + bias1 >= 0.0 && cx2 + bias2 >= 0.0 && cx3 + bias3 >= 0.0
+                } else {
+                    cx1 + bias1 <= 0.0 && cx2 + bias2 <= 0.0 && cx3 + bias3 <= 0.0
+                };
+
+                if inside {
                     let w1 = cx2 / area;
                     let w2 = cx3 / area;
                     let w3 = cx1 / area;
