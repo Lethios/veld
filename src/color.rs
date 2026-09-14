@@ -3,14 +3,14 @@ use std::ops::{Add, Mul, Sub};
 /// A color represented by normalized red, green, blue and alpha components.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Color {
-    /// Red channel value in the range [0.0, 1.0].
-    pub r: f32,
-    /// Green channel value in the range [0.0, 1.0].
-    pub g: f32,
-    /// Blue channel value in the range [0.0, 1.0].
-    pub b: f32,
-    /// Alpha channel value in the range [0.0, 1.0].
-    pub a: f32,
+    /// Red channel value in the range `[0.0, 1.0]`.
+    r: f32,
+    /// Green channel value in the range `[0.0, 1.0]`.
+    g: f32,
+    /// Blue channel value in the range `[0.0, 1.0]`.
+    b: f32,
+    /// Alpha channel value in the range `[0.0, 1.0]`.
+    a: f32,
 }
 
 impl Color {
@@ -46,35 +46,34 @@ impl Color {
         Self { r, g, b, a }
     }
 
-    /// Creates a `Color` from a u32 (`0xRRGGBB`) with alpha set to 1.0.
+    /// Creates a `Color` from a `u32` in `0xRRGGBBAA` format.
     pub const fn from_hex(hex: u32) -> Self {
-        let r = ((hex >> 16) & 0xFF) as u8;
-        let g = ((hex >> 8) & 0xFF) as u8;
-        let b = (hex & 0xFF) as u8;
-        let a = 255_u8;
+        let r = (hex >> 24) as u8;
+        let g = (hex >> 16) as u8;
+        let b = (hex >> 8) as u8;
+        let a = hex as u8;
 
         Self::from_rgba8(r, g, b, a)
+    }
+
+    /// Returns `Self` as a u32 in `0xRRGGBBAA` format.
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "Components are guaranteed to be in the range [0.0, 1.0]"
+    )]
+    pub const fn to_u32(self) -> u32 {
+        let r = (self.r * 255.0).round() as u32;
+        let g = (self.g * 255.0).round() as u32;
+        let b = (self.b * 255.0).round() as u32;
+        let a = (self.a * 255.0).round() as u32;
+
+        (r << 24) | (g << 16) | (b << 8) | a
     }
 }
 
 impl Default for Color {
     fn default() -> Self {
         Self::new(1.0, 1.0, 1.0, 1.0)
-    }
-}
-
-#[expect(
-    clippy::cast_sign_loss,
-    reason = "Values are clamped to the interval [0.0, 1.0]"
-)]
-impl From<Color> for u32 {
-    fn from(value: Color) -> Self {
-        let r = (value.r * 255.0).round() as u32;
-        let g = (value.g * 255.0).round() as u32;
-        let b = (value.b * 255.0).round() as u32;
-        let a = (value.a * 255.0).round() as u32;
-
-        (a << 24) | (r << 16) | (g << 8) | b
     }
 }
 

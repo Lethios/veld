@@ -25,7 +25,7 @@ impl Canvas {
         Ok(Self {
             width,
             height,
-            color_buffer: vec![Color::BLACK.into(); size],
+            color_buffer: vec![Color::BLACK.to_u32(); size],
             depth_buffer: vec![1.0; size],
         })
     }
@@ -47,7 +47,7 @@ impl Canvas {
 
     /// Clears `color_buffer` by setting every pixel to `color`.
     pub fn clear(&mut self, color: Color) {
-        self.color_buffer.fill(color.into());
+        self.color_buffer.fill(color.to_u32());
     }
 
     /// Resets `depth_buffer` by setting every value to 1.0.
@@ -78,7 +78,7 @@ impl Canvas {
             && depth <= self.depth_buffer[index]
         {
             self.depth_buffer[index] = depth;
-            self.color_buffer[index] = color.into();
+            self.color_buffer[index] = color.to_u32();
         }
     }
 
@@ -88,7 +88,7 @@ impl Canvas {
             && depth <= self.depth_buffer[index]
         {
             self.depth_buffer[index] = depth;
-            self.color_buffer[index] = color.into();
+            self.color_buffer[index] = color.to_u32();
         }
     }
 
