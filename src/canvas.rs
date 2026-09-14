@@ -94,7 +94,52 @@ impl Canvas {
     }
 
     /// Draws a line from `start` to `end`.
-    pub fn draw_line(&mut self, _start: Vertex, _end: Vertex) {}
+    pub fn draw_line(&mut self, start: Vertex, end: Vertex) {
+        let (mut x1, mut y1, mut z1, mut c1) = (
+            start.position.x,
+            start.position.y,
+            start.position.depth,
+            start.color,
+        );
+        let (mut x2, mut y2, mut z2, mut c2) = (
+            end.position.x,
+            end.position.y,
+            end.position.depth,
+            end.color,
+        );
+
+        let steep = (x1 - x2).abs() < (y1 - y2).abs();
+
+        if steep {
+            std::mem::swap(&mut x1, &mut y1);
+            std::mem::swap(&mut x2, &mut y2);
+        }
+
+        if x1 > x2 {
+            std::mem::swap(&mut x1, &mut x2);
+            std::mem::swap(&mut y1, &mut y2);
+            std::mem::swap(&mut z1, &mut z2);
+            std::mem::swap(&mut c1, &mut c2);
+        }
+
+        let dx = x2 - x1;
+        let mut y = y1;
+
+        for x in (x1.round() as i32)..=(x2.round() as i32) {
+            let t = if dx == 0.0 { 0.0 } else { (x as f32 - x1) / dx };
+
+            let z = z1 * (1.0 - t) + z2 * t;
+            let color = c1 * (1.0 - t) + c2 * t;
+
+            if steep {
+                self.set_pixel(y.round() as i32, x, z, color);
+            } else {
+                self.set_pixel(x, y.round() as i32, z, color);
+            }
+
+            y += (y2 - y1) / dx;
+        }
+    }
 
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
     pub fn draw_triangle(&mut self, _a: Vertex, _b: Vertex, _c: Vertex) {}
