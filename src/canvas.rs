@@ -142,8 +142,51 @@ impl Canvas {
     }
 
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
-    pub fn draw_triangle(&mut self, _a: Vertex, _b: Vertex, _c: Vertex) {}
+    pub fn draw_triangle(&mut self, a: Vertex, b: Vertex, c: Vertex) {
+        self.draw_line(a, b);
+        self.draw_line(b, c);
+        self.draw_line(c, a);
+    }
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
-    pub fn fill_triangle(&mut self, _a: Vertex, _b: Vertex, _c: Vertex) {}
+    pub fn fill_triangle(&mut self, a: Vertex, b: Vertex, c: Vertex) {
+        let (x1, y1, z1) = (a.position.x, a.position.y, a.position.depth);
+        let (x2, y2, z2) = (b.position.x, b.position.y, b.position.depth);
+        let (x3, y3, z3) = (c.position.x, c.position.y, c.position.depth);
+
+        let (dx12, dx23, dx31) = (x1 - x2, x2 - x3, x3 - x1);
+        let (dy12, dy23, dy31) = (y1 - y2, y2 - y3, y3 - y1);
+
+        let (x_min, x_max) = (x1.min(x2).min(x3), x1.max(x2).max(x3));
+        let (y_min, y_max) = (y1.min(y2).min(y3), y1.max(y2).max(y3));
+
+        let (c1, c2, c3) = (
+            dy12 * x1 - dx12 * y1,
+            dy12 * x1 - dx12 * y1,
+            dy12 * x1 - dx12 * y1,
+        );
+        let (mut cy1, mut cy2, mut cy3) = (
+            c1 + dx12 * y_min - dy12 * x_min,
+            c2 + dx23 * y_min - dy23 * x_min,
+            c3 + dx31 * y_min - dy31 * x_min,
+        );
+
+        for y in (y_min.round() as i32)..=(y_max.round() as i32) {
+            let (mut cx1, mut cx2, mut cx3) = (cy1, cy2, cy3);
+
+            for x in (x_min.round() as i32)..=(x_max.round() as i32) {
+                if cx1 > 0.0 && cx2 > 0.0 && cx3 > 0.0 {
+                    self.set_pixel(x, y, z1, Color::WHITE);
+                }
+
+                cx1 -= dy12;
+                cx2 -= dy23;
+                cx3 -= dy31;
+            }
+
+            cy1 += dx12;
+            cy2 += dx23;
+            cy3 += dx31;
+        }
+    }
 }
