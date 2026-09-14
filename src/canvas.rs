@@ -162,14 +162,19 @@ impl Canvas {
 
         let (c1, c2, c3) = (
             dy12 * x1 - dx12 * y1,
-            dy12 * x1 - dx12 * y1,
-            dy12 * x1 - dx12 * y1,
+            dy23 * x2 - dx23 * y2,
+            dy31 * x3 - dx31 * y3,
         );
         let (mut cy1, mut cy2, mut cy3) = (
             c1 + dx12 * y_min - dy12 * x_min,
             c2 + dx23 * y_min - dy23 * x_min,
             c3 + dx31 * y_min - dy31 * x_min,
         );
+
+        let area = c1 + c2 + c3;
+        if area == 0.0 {
+            return;
+        }
 
         for y in (y_min.round() as i32)..=(y_max.round() as i32) {
             let (mut cx1, mut cx2, mut cx3) = (cy1, cy2, cy3);
