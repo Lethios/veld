@@ -183,10 +183,13 @@ impl Canvas {
         let bias2 = if is_top_left(dx23, dy23) { 0.0 } else { -1e-4 };
         let bias3 = if is_top_left(dx31, dy31) { 0.0 } else { -1e-4 };
 
+        let start_x = x_min.floor() as i32;
+        let start_y = y_min.floor() as i32;
+
         let (mut cy1, mut cy2, mut cy3) = (
-            c1 + dx12 * y_min - dy12 * x_min,
-            c2 + dx23 * y_min - dy23 * x_min,
-            c3 + dx31 * y_min - dy31 * x_min,
+            c1 + dx12 * (start_y as f32 + 0.5) - dy12 * (start_x as f32 + 0.5),
+            c2 + dx23 * (start_y as f32 + 0.5) - dy23 * (start_x as f32 + 0.5),
+            c3 + dx31 * (start_y as f32 + 0.5) - dy31 * (start_x as f32 + 0.5),
         );
 
         for y in (y_min.round() as i32)..=(y_max.round() as i32) {
