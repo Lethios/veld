@@ -4,13 +4,13 @@ use std::ops::{Add, Mul, Sub};
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Color {
     /// Red channel value in the range `[0.0, 1.0]`.
-    r: f32,
+    pub r: f32,
     /// Green channel value in the range `[0.0, 1.0]`.
-    g: f32,
+    pub g: f32,
     /// Blue channel value in the range `[0.0, 1.0]`.
-    b: f32,
+    pub b: f32,
     /// Alpha channel value in the range `[0.0, 1.0]`.
-    a: f32,
+    pub a: f32,
 }
 
 impl Color {

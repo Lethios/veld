@@ -181,7 +181,19 @@ impl Canvas {
 
             for x in (x_min.round() as i32)..=(x_max.round() as i32) {
                 if cx1 > 0.0 && cx2 > 0.0 && cx3 > 0.0 {
-                    self.set_pixel(x, y, z1, Color::WHITE);
+                    let w1 = cx2 / area;
+                    let w2 = cx3 / area;
+                    let w3 = cx1 / area;
+
+                    let z = w1 * z1 + w2 * z2 + w3 * z3;
+                    let color = Color::new(
+                        w1 * a.color.r + w2 * b.color.r + w3 * c.color.r,
+                        w1 * a.color.g + w2 * b.color.g + w3 * c.color.g,
+                        w1 * a.color.b + w2 * b.color.b + w3 * c.color.b,
+                        1.0,
+                    );
+
+                    self.set_pixel(x, y, z, color);
                 }
 
                 cx1 -= dy12;
