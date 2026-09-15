@@ -46,7 +46,7 @@ impl Color {
         Self { r, g, b, a }
     }
 
-    /// Creates a `Color` from a `u32` in `0xAARRGGBB` format.
+    /// Creates a `Color` from a `u32` in `0xRRGGBBAA` format.
     pub const fn from_hex(hex: u32) -> Self {
         let r = (hex >> 24) as u8;
         let g = (hex >> 16) as u8;

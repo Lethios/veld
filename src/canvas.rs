@@ -1,4 +1,4 @@
-use crate::{Color, ScreenPosition, Vec2, Vertex};
+use crate::{Color, ScreenVertex};
 
 /// A 3-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
@@ -83,30 +83,26 @@ impl Canvas {
     }
 
     /// Draws a single pixel at `point`.
-    pub fn draw_pixel(&mut self, point: Vertex) {
+    pub fn draw_pixel(&mut self, point: ScreenVertex) {
         let (x, y, depth) = (
             point.position.x.round() as i32,
             point.position.y.round() as i32,
-            point.position.depth,
+            point.position.z,
         );
 
         self.set_pixel(x, y, depth, point.color);
     }
 
     /// Draws a line from `start` to `end`.
-    pub fn draw_line(&mut self, start: Vertex, end: Vertex) {
+    pub fn draw_line(&mut self, start: ScreenVertex, end: ScreenVertex) {
         let (mut x1, mut y1, mut z1, mut c1) = (
             start.position.x,
             start.position.y,
-            start.position.depth,
+            start.position.z,
             start.color,
         );
-        let (mut x2, mut y2, mut z2, mut c2) = (
-            end.position.x,
-            end.position.y,
-            end.position.depth,
-            end.color,
-        );
+        let (mut x2, mut y2, mut z2, mut c2) =
+            (end.position.x, end.position.y, end.position.z, end.color);
 
         let steep = (x1 - x2).abs() < (y1 - y2).abs();
 
@@ -142,33 +138,21 @@ impl Canvas {
     }
 
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
-    pub fn draw_triangle(&mut self, a: Vertex, b: Vertex, c: Vertex) {
+    pub fn draw_triangle(&mut self, a: ScreenVertex, b: ScreenVertex, c: ScreenVertex) {
         self.draw_line(a, b);
         self.draw_line(b, c);
         self.draw_line(c, a);
     }
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
-    pub fn fill_triangle(&mut self, a: Vertex, b: Vertex, c: Vertex) {
+    pub fn fill_triangle(&mut self, a: ScreenVertex, b: ScreenVertex, c: ScreenVertex) {
         const FIXED_SHIFT: i32 = 12;
         const FIXED_SCALE: f32 = (1 << FIXED_SHIFT) as f32;
         let to_fixed = |v: f32| -> i32 { (v * FIXED_SCALE).round() as i32 };
 
-        let (ax, ay, az) = (
-            to_fixed(a.position.x),
-            to_fixed(a.position.y),
-            a.position.depth,
-        );
-        let (bx, by, bz) = (
-            to_fixed(b.position.x),
-            to_fixed(b.position.y),
-            b.position.depth,
-        );
-        let (cx, cy, cz) = (
-            to_fixed(c.position.x),
-            to_fixed(c.position.y),
-            c.position.depth,
-        );
+        let (ax, ay, az) = (to_fixed(a.position.x), to_fixed(a.position.y), a.position.z);
+        let (bx, by, bz) = (to_fixed(b.position.x), to_fixed(b.position.y), b.position.z);
+        let (cx, cy, cz) = (to_fixed(c.position.x), to_fixed(c.position.y), c.position.z);
 
         let mask = (1 << FIXED_SHIFT) - 1;
 

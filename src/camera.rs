@@ -13,16 +13,6 @@ pub enum Projection {
     Perspective { fov: f32 },
 }
 
-/// A point in screen space.
-///
-/// Constructed by `Camera::ndc_to_screen()` to ensure valid coordinates.
-#[derive(Debug, Clone, Copy)]
-pub struct ScreenPosition {
-    pub x: f32,
-    pub y: f32,
-    pub depth: f32,
-}
-
 /// A camera defined by `position`, `yaw` and `pitch`.
 #[derive(Debug, Clone, Copy)]
 pub struct Camera {
@@ -169,7 +159,7 @@ impl Camera {
     ///
     /// Returns `None` if the point is behind the camera or outside the NDC bounds.
     fn clip_to_ndc(&self, clip: Vec4) -> Option<Vec3> {
-        if clip.w < f32::EPSILON {
+        if clip.w < 0.0 {
             return None;
         }
 
@@ -184,16 +174,16 @@ impl Camera {
     }
 
     /// Transforms normalized device coordinates (NDC) into screen space coordinates.
-    fn ndc_to_screen(&self, ndc: Vec3, width: usize, height: usize) -> ScreenPosition {
+    fn ndc_to_screen(&self, ndc: Vec3, width: usize, height: usize) -> Vec3 {
         let x = (ndc.x + 1.0) / 2.0 * width as f32;
         let y = (ndc.y + 1.0) / 2.0 * height as f32;
-        let depth = ndc.z * 0.5 + 0.5;
+        let z = ndc.z * 0.5 + 0.5;
 
-        ScreenPosition { x, y, depth }
+        Vec3::new(x, y, z)
     }
 
     /// Runs the full pipeline of transforming world space position into screen space coordinates.
-    pub fn project(&self, world: Vec3, width: usize, height: usize) -> Option<ScreenPosition> {
+    pub fn project(&self, world: Vec3, width: usize, height: usize) -> Option<Vec3> {
         let camera = self.world_to_camera(world);
         let clip = self.camera_to_clip(camera, width, height);
         let ndc = self.clip_to_ndc(clip)?;
