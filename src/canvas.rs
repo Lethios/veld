@@ -1,4 +1,4 @@
-use crate::{Color, Vertex};
+use crate::{Color, ScreenPosition, Vec2, Vertex};
 
 /// A 3-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
@@ -150,82 +150,102 @@ impl Canvas {
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
     pub fn fill_triangle(&mut self, a: Vertex, b: Vertex, c: Vertex) {
-        let (x1, y1, z1) = (a.position.x, a.position.y, a.position.depth);
-        let (x2, y2, z2) = (b.position.x, b.position.y, b.position.depth);
-        let (x3, y3, z3) = (c.position.x, c.position.y, c.position.depth);
+        const FIXED_SHIFT: i32 = 12;
+        const FIXED_SCALE: f32 = (1 << FIXED_SHIFT) as f32;
+        let to_fixed = |v: f32| -> i32 { (v * FIXED_SCALE).round() as i32 };
 
-        let (dx12, dx23, dx31) = (x1 - x2, x2 - x3, x3 - x1);
-        let (dy12, dy23, dy31) = (y1 - y2, y2 - y3, y3 - y1);
-
-        let (x_min, x_max) = (x1.min(x2).min(x3), x1.max(x2).max(x3));
-        let (y_min, y_max) = (y1.min(y2).min(y3), y1.max(y2).max(y3));
-
-        let (c1, c2, c3) = (
-            dy12 * x1 - dx12 * y1,
-            dy23 * x2 - dx23 * y2,
-            dy31 * x3 - dx31 * y3,
+        let (ax, ay, az) = (
+            to_fixed(a.position.x),
+            to_fixed(a.position.y),
+            a.position.depth,
+        );
+        let (bx, by, bz) = (
+            to_fixed(b.position.x),
+            to_fixed(b.position.y),
+            b.position.depth,
+        );
+        let (cx, cy, cz) = (
+            to_fixed(c.position.x),
+            to_fixed(c.position.y),
+            c.position.depth,
         );
 
-        let area = c1 + c2 + c3;
-        if area == 0.0 {
+        let mask = (1 << FIXED_SHIFT) - 1;
+
+        let (x_min, x_max) = (
+            ax.min(bx).min(cx) >> FIXED_SHIFT,
+            (ax.max(bx).max(cx) + mask) >> FIXED_SHIFT,
+        );
+        let (y_min, y_max) = (
+            ay.min(by).min(cy) >> FIXED_SHIFT,
+            (ay.max(by).max(cy) + mask) >> FIXED_SHIFT,
+        );
+
+        let determinant = |ax: i32, ay: i32, bx: i32, by: i32, cx: i32, cy: i32| -> i64 {
+            (bx - ax) as i64 * (cy - ay) as i64 - (cx - ax) as i64 * (by - ay) as i64
+        };
+        let is_top_left = |ax: i32, ay: i32, bx: i32, by: i32| -> bool {
+            let x_edge = bx - ax;
+            let y_edge = by - ay;
+
+            (y_edge < 0) || (y_edge == 0 && x_edge < 0)
+        };
+
+        if determinant(ax, ay, bx, by, cx, cy) <= 0 {
             return;
         }
 
-        let is_top_left = |dx: f32, dy: f32| -> bool {
-            if area > 0.0 {
-                dy < 0.0 || (dy == 0.0 && dx > 0.0)
-            } else {
-                dy > 0.0 || (dy == 0.0 && dx < 0.0)
-            }
+        let area = determinant(ax, ay, bx, by, cx, cy) as f32;
+
+        let bias1 = if is_top_left(bx, by, cx, cy) {
+            0_i64
+        } else {
+            -(1_i64 << FIXED_SHIFT)
+        };
+        let bias2 = if is_top_left(cx, cy, ax, ay) {
+            0_i64
+        } else {
+            -(1_i64 << FIXED_SHIFT)
+        };
+        let bias3 = if is_top_left(ax, ay, bx, by) {
+            0_i64
+        } else {
+            -(1_i64 << FIXED_SHIFT)
         };
 
-        let bias1 = if is_top_left(dx12, dy12) { 0.0 } else { -1e-4 };
-        let bias2 = if is_top_left(dx23, dy23) { 0.0 } else { -1e-4 };
-        let bias3 = if is_top_left(dx31, dy31) { 0.0 } else { -1e-4 };
+        let (a1, b1) = (by - cy, cx - bx);
+        let (a2, b2) = (cy - ay, ax - cx);
+        let (a3, b3) = (ay - by, bx - ax);
 
-        let start_x = x_min.floor() as i32;
-        let start_y = y_min.floor() as i32;
+        let x = (x_min << FIXED_SHIFT) + (1 << (FIXED_SHIFT - 1));
+        let y = (y_min << FIXED_SHIFT) + (1 << (FIXED_SHIFT - 1));
 
-        let (mut cy1, mut cy2, mut cy3) = (
-            c1 + dx12 * (start_y as f32 + 0.5) - dy12 * (start_x as f32 + 0.5),
-            c2 + dx23 * (start_y as f32 + 0.5) - dy23 * (start_x as f32 + 0.5),
-            c3 + dx31 * (start_y as f32 + 0.5) - dy31 * (start_x as f32 + 0.5),
-        );
+        let mut w1_row = determinant(bx, by, cx, cy, x, y) + bias1;
+        let mut w2_row = determinant(cx, cy, ax, ay, x, y) + bias2;
+        let mut w3_row = determinant(ax, ay, bx, by, x, y) + bias3;
 
-        for y in (y_min.round() as i32)..=(y_max.round() as i32) {
-            let (mut cx1, mut cx2, mut cx3) = (cy1, cy2, cy3);
+        for y_int in y_min..=y_max {
+            let (mut w1, mut w2, mut w3) = (w1_row, w2_row, w3_row);
 
-            for x in (x_min.round() as i32)..=(x_max.round() as i32) {
-                let inside = if area > 0.0 {
-                    cx1 + bias1 >= 0.0 && cx2 + bias2 >= 0.0 && cx3 + bias3 >= 0.0
-                } else {
-                    cx1 + bias1 <= 0.0 && cx2 + bias2 <= 0.0 && cx3 + bias3 <= 0.0
-                };
+            for x_int in x_min..=x_max {
+                if w1 >= 0 && w2 >= 0 && w3 >= 0 {
+                    let wt1 = w1 as f32 / area;
+                    let wt2 = w2 as f32 / area;
+                    let wt3 = w3 as f32 / area;
 
-                if inside {
-                    let w1 = cx2 / area;
-                    let w2 = cx3 / area;
-                    let w3 = cx1 / area;
-
-                    let z = w1 * z1 + w2 * z2 + w3 * z3;
-                    let color = Color::new(
-                        w1 * a.color.r + w2 * b.color.r + w3 * c.color.r,
-                        w1 * a.color.g + w2 * b.color.g + w3 * c.color.g,
-                        w1 * a.color.b + w2 * b.color.b + w3 * c.color.b,
-                        1.0,
-                    );
-
-                    self.set_pixel(x, y, z, color);
+                    let z = wt1 * az + wt2 * bz + wt3 * cz;
+                    let color = a.color * wt1 + b.color * wt2 + c.color * wt3;
+                    self.set_pixel(x_int, y_int, z, color);
                 }
 
-                cx1 -= dy12;
-                cx2 -= dy23;
-                cx3 -= dy31;
+                w1 += (a1 as i64) << FIXED_SHIFT;
+                w2 += (a2 as i64) << FIXED_SHIFT;
+                w3 += (a3 as i64) << FIXED_SHIFT;
             }
 
-            cy1 += dx12;
-            cy2 += dx23;
-            cy3 += dx31;
+            w1_row += (b1 as i64) << FIXED_SHIFT;
+            w2_row += (b2 as i64) << FIXED_SHIFT;
+            w3_row += (b3 as i64) << FIXED_SHIFT;
         }
     }
 }
