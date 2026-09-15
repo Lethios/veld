@@ -143,27 +143,31 @@ impl Camera {
         }
     }
 
-    /// Transforms a point from world space into camera (view) space.
-    fn world_to_camera(&self, world: Vec3) -> Vec3 {
-        let res = self.view_matrix() * world.to_homogeneous();
+    /// Transforms a point from world space into view space.
+    fn world_to_view(&self, world_vec: Vec3) -> Vec3 {
+        let res = self.view_matrix() * world_vec.to_homogeneous();
 
         Vec3::new(res.x, res.y, res.z)
     }
 
-    /// Transforms a point from camera space into clip space.
-    fn camera_to_clip(&self, camera: Vec3, width: usize, height: usize) -> Vec4 {
-        self.projection_matrix(width, height) * camera.to_homogeneous()
+    /// Transforms a point from view space into clip space.
+    fn view_to_clip(&self, view_vec: Vec3, width: usize, height: usize) -> Vec4 {
+        self.projection_matrix(width, height) * view_vec.to_homogeneous()
     }
 
     /// Transforms a point from clip space into normalized device coordinates (NDC).
     ///
     /// Returns `None` if the point is behind the camera or outside the NDC bounds.
-    fn clip_to_ndc(&self, clip: Vec4) -> Option<Vec3> {
-        if clip.w < 0.0 {
+    fn clip_to_ndc(&self, clip_vec: Vec4) -> Option<Vec3> {
+        if clip_vec.w < 0.0 {
             return None;
         }
 
-        let ndc = Vec3::new(clip.x / clip.w, clip.y / clip.w, clip.z / clip.w);
+        let ndc = Vec3::new(
+            clip_vec.x / clip_vec.w,
+            clip_vec.y / clip_vec.w,
+            clip_vec.z / clip_vec.w,
+        );
 
         if ndc.x < -1.0 || ndc.x > 1.0 || ndc.y < -1.0 || ndc.y > 1.0 || ndc.z < -1.0 || ndc.z > 1.0
         {
@@ -183,9 +187,9 @@ impl Camera {
     }
 
     /// Runs the full pipeline of transforming world space position into screen space coordinates.
-    pub fn project(&self, world: Vec3, width: usize, height: usize) -> Option<Vec3> {
-        let camera = self.world_to_camera(world);
-        let clip = self.camera_to_clip(camera, width, height);
+    pub fn project(&self, position: Vec3, width: usize, height: usize) -> Option<Vec3> {
+        let camera = self.world_to_view(position);
+        let clip = self.view_to_clip(camera, width, height);
         let ndc = self.clip_to_ndc(clip)?;
         let screen = self.ndc_to_screen(ndc, width, height);
 
