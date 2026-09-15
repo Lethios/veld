@@ -1,4 +1,4 @@
-use crate::{Mat4, Vec3, Vec4};
+use crate::{Color, Mat4, ScreenVertex, Vec3, Vec4};
 
 /// The projection mode used by `Camera`.
 #[derive(Debug, Clone, Copy)]
@@ -158,11 +158,7 @@ impl Camera {
     /// Transforms a point from clip space into normalized device coordinates (NDC).
     ///
     /// Returns `None` if the point is behind the camera or outside the NDC bounds.
-    fn clip_to_ndc(&self, clip_vec: Vec4) -> Option<Vec3> {
-        if clip_vec.w < 0.0 {
-            return None;
-        }
-
+    fn clip_to_ndc(&self, clip_vec: Vec4) -> Option<(Vec3, f32)> {
         let ndc = Vec3::new(
             clip_vec.x / clip_vec.w,
             clip_vec.y / clip_vec.w,
@@ -174,7 +170,7 @@ impl Camera {
             return None;
         }
 
-        Some(ndc)
+        Some((ndc, clip_vec.w))
     }
 
     /// Transforms normalized device coordinates (NDC) into screen space coordinates.
@@ -187,13 +183,19 @@ impl Camera {
     }
 
     /// Runs the full pipeline of transforming world space position into screen space coordinates.
-    pub fn project(&self, position: Vec3, width: usize, height: usize) -> Option<Vec3> {
-        let camera = self.world_to_view(position);
-        let clip = self.view_to_clip(camera, width, height);
-        let ndc = self.clip_to_ndc(clip)?;
+    pub fn project(
+        &self,
+        position: Vec3,
+        color: Color,
+        width: usize,
+        height: usize,
+    ) -> Option<ScreenVertex> {
+        let view = self.world_to_view(position);
+        let clip = self.view_to_clip(view, width, height);
+        let (ndc, w) = self.clip_to_ndc(clip)?;
         let screen = self.ndc_to_screen(ndc, width, height);
 
-        Some(screen)
+        Some(ScreenVertex::new(screen, color, 1.0 / w))
     }
 }
 

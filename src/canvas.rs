@@ -124,8 +124,11 @@ impl Canvas {
         for x in (x1.round() as i32)..=(x2.round() as i32) {
             let t = if dx == 0.0 { 0.0 } else { (x as f32 - x1) / dx };
 
-            let z = z1 * (1.0 - t) + z2 * t;
-            let color = c1 * (1.0 - t) + c2 * t;
+            let (w1, w2) = (start.inv_w, end.inv_w);
+            let inv_w = w1 * (1.0 - t) + w2 * t;
+
+            let z = (z1 * w1 * (1.0 - t) + z2 * w2 * t) / inv_w;
+            let color = (c1 * w1 * (1.0 - t) + c2 * w2 * t) / inv_w;
 
             if steep {
                 self.set_pixel(y.round() as i32, x, z, color);
@@ -216,9 +219,14 @@ impl Canvas {
                     let wt1 = w1 as f32 / area;
                     let wt2 = w2 as f32 / area;
                     let wt3 = w3 as f32 / area;
+                    let inv_w = wt1 * a.inv_w + wt2 * b.inv_w + wt3 * c.inv_w;
 
-                    let z = wt1 * az + wt2 * bz + wt3 * cz;
-                    let color = a.color * wt1 + b.color * wt2 + c.color * wt3;
+                    let z = (wt1 * a.inv_w * az + wt2 * b.inv_w * bz + wt3 * c.inv_w * cz) / inv_w;
+                    let color = (a.color * (wt1 * a.inv_w)
+                        + b.color * (wt2 * b.inv_w)
+                        + c.color * (wt3 * c.inv_w))
+                        / inv_w;
+
                     self.set_pixel(x_int, y_int, z, color);
                 }
 

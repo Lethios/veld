@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 /// A color represented by normalized red, green, blue and alpha components.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -135,5 +135,13 @@ impl Mul<f32> for Color {
 
     fn mul(self, rhs: f32) -> Self::Output {
         Self::new(self.r * rhs, self.g * rhs, self.b * rhs, self.a * rhs)
+    }
+}
+
+impl Div<f32> for Color {
+    type Output = Self;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        Self::new(self.r / rhs, self.g / rhs, self.b / rhs, self.a / rhs)
     }
 }
