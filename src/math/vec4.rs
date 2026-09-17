@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 /// A 4-dimensional vector.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -55,6 +55,15 @@ impl Add for Vec4 {
     }
 }
 
+impl AddAssign for Vec4 {
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+        self.w += rhs.w;
+    }
+}
+
 impl Sub for Vec4 {
     type Output = Self;
 
@@ -65,6 +74,15 @@ impl Sub for Vec4 {
             z: self.z - rhs.z,
             w: self.w - rhs.w,
         }
+    }
+}
+
+impl SubAssign for Vec4 {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+        self.z -= rhs.z;
+        self.w -= rhs.w;
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{Mat4, Vec3, Vec4};
+use crate::{Color, Mat4, ScreenVertex, Vec3, Vec4};
 
 /// The projection mode used by `Camera`.
 #[derive(Debug, Clone, Copy)]
@@ -55,31 +55,81 @@ impl Camera {
         Vec3::new(
             self.pitch.cos() * self.yaw.sin(),
             self.pitch.sin(),
-            self.pitch.cos() * self.yaw.cos(),
+            -self.pitch.cos() * self.yaw.cos(),
         )
     }
 
     /// Returns the `Camera`'s right direction.
     pub fn local_right(&self) -> Vec3 {
-        Vec3::new(self.yaw.cos(), 0.0, -self.yaw.sin())
+        Vec3::new(self.yaw.cos(), 0.0, self.yaw.sin())
     }
 
     /// Returns the `Camera`'s up direction.
     pub fn local_up(&self) -> Vec3 {
-        self.local_right().cross(self.local_forward())
-    }
-
-    /// Returns the matrix that transforms world space to camera space.
-    pub fn view_matrix(&self) -> Mat4 {
-        Mat4::look_at(
-            self.position,
-            self.position + self.local_forward(),
-            self.local_up(),
+        Vec3::new(
+            -self.pitch.sin() * self.yaw.sin(),
+            self.pitch.cos(),
+            self.pitch.sin() * self.yaw.cos(),
         )
     }
 
-    /// Returns the projection matrix for the given `aspect` ratio.
-    pub fn projection_matrix(&self, aspect: f32) -> Mat4 {
+    /// Moves `Camera` along its local forward axis.
+    ///
+    /// Negative `distance` moves backwards.
+    pub fn move_forward(&mut self, distance: f32) {
+        self.position += self.local_forward() * distance;
+    }
+
+    /// Moves `Camera` along its local right axis.
+    ///
+    /// Negative `distance` moves left.
+    pub fn move_right(&mut self, distance: f32) {
+        self.position += self.local_right() * distance;
+    }
+
+    /// Moves `Camera` along its local up axis.
+    ///
+    /// Negative `distance` moves down.
+    pub fn move_up(&mut self, distance: f32) {
+        self.position += self.local_up() * distance;
+    }
+
+    /// Rotates `Camera` horizontally to the right.
+    ///
+    /// Negative `angle` rotates left.
+    pub fn rotate_yaw(&mut self, angle: f32) {
+        self.yaw += angle;
+    }
+
+    /// Rotates `Camera` vertically upward.
+    ///
+    /// Negative `angle` rotates downward.
+    ///
+    /// `pitch` is clamped to keep the view matrix stable.
+    pub fn rotate_pitch(&mut self, angle: f32) {
+        self.pitch = (self.pitch + angle).clamp(
+            -std::f32::consts::FRAC_PI_2 + 0.001,
+            std::f32::consts::FRAC_PI_2 - 0.001,
+        );
+    }
+
+    /// Returns the `Camera`'s view matrix.
+    ///
+    /// The view matrix transforms coordinates from world space into view space.
+    fn view_matrix(&self) -> Mat4 {
+        Mat4::view(
+            self.position,
+            self.position + self.local_forward(),
+            Vec3::new(0.0, 1.0, 0.0),
+        )
+    }
+
+    /// Returns the `Camera`'s projection matrix.
+    ///
+    /// The projection matrix transforms coordinates from view space into clip space.
+    fn projection_matrix(&self, width: usize, height: usize) -> Mat4 {
+        let aspect = width as f32 / height as f32;
+
         match self.projection {
             Projection::Orthographic { scale } => Mat4::orthographic(
                 -(scale * aspect),
@@ -93,53 +143,73 @@ impl Camera {
         }
     }
 
-    /// Returns the product of `projection_matrix` and `view_matrix`.
-    pub fn view_projection(&self, aspect: f32) -> Mat4 {
-        self.projection_matrix(aspect) * self.view_matrix()
+    /// Transforms a point from world space into view space.
+    fn world_to_view(&self, world_vec: Vec3) -> Vec3 {
+        let res = self.view_matrix() * world_vec.to_homogeneous();
+
+        Vec3::new(res.x, res.y, res.z)
     }
 
-    /// Returns the projection of Vec3 in world space to screen space coordinates.
-    pub fn project(&self, vec: Vec3, screen_width: f32, screen_height: f32) -> Option<Vec3> {
-        let view_proj_matrix = self.view_projection(screen_width / screen_height);
+    /// Transforms a point from view space into clip space.
+    fn view_to_clip(&self, view_vec: Vec3, width: usize, height: usize) -> Vec4 {
+        self.projection_matrix(width, height) * view_vec.to_homogeneous()
+    }
 
-        // Convert to clip space
-        let clip = view_proj_matrix * Vec4::new(vec.x, vec.y, vec.z, 1.0);
+    /// Transforms a point from clip space into normalized device coordinates (NDC).
+    ///
+    /// Returns `None` if the point is behind the camera or outside the NDC bounds.
+    fn clip_to_ndc(&self, clip_vec: Vec4) -> Option<(Vec3, f32)> {
+        let ndc = Vec3::new(
+            clip_vec.x / clip_vec.w,
+            clip_vec.y / clip_vec.w,
+            clip_vec.z / clip_vec.w,
+        );
 
-        // Reject if behind camera
-        // TODO: implement full frustum clipping
-        if clip.w <= 0.0 {
-            return None;
-        }
-
-        // Convert to NDC
-        let ndc = Vec3::new(clip.x / clip.w, clip.y / clip.w, clip.z / clip.w);
-
-        // Reject if outside view frustum
         if ndc.x < -1.0 || ndc.x > 1.0 || ndc.y < -1.0 || ndc.y > 1.0 || ndc.z < -1.0 || ndc.z > 1.0
         {
             return None;
         }
 
-        // Convert to screen space coordinates
-        Some(Vec3::new(
-            ndc.x * screen_width / 2.0,
-            ndc.y * screen_height / 2.0,
-            ndc.z,
-        ))
+        Some((ndc, clip_vec.w))
+    }
+
+    /// Transforms normalized device coordinates (NDC) into screen space coordinates.
+    fn ndc_to_screen(&self, ndc: Vec3, width: usize, height: usize) -> Vec3 {
+        let x = (ndc.x + 1.0) / 2.0 * width as f32;
+        let y = (ndc.y + 1.0) / 2.0 * height as f32;
+        let z = ndc.z * 0.5 + 0.5;
+
+        Vec3::new(x, y, z)
+    }
+
+    /// Runs the full pipeline of transforming world space position into screen space coordinates.
+    pub fn project(
+        &self,
+        position: Vec3,
+        color: Color,
+        width: usize,
+        height: usize,
+    ) -> Option<ScreenVertex> {
+        let view = self.world_to_view(position);
+        let clip = self.view_to_clip(view, width, height);
+        let (ndc, w) = self.clip_to_ndc(clip)?;
+        let screen = self.ndc_to_screen(ndc, width, height);
+
+        Some(ScreenVertex::new(screen, color, 1.0 / w))
     }
 }
 
 impl Default for Camera {
     fn default() -> Self {
         Self::new(
-            Vec3::new(0.0, 0.0, -10.0),
+            Vec3::new(0.0, 0.0, 10.0),
             0.0,
             0.0,
             Projection::Perspective {
-                fov: 45.0_f32.to_radians(),
+                fov: std::f32::consts::FRAC_PI_4,
             },
-            0.01,
-            10000.0,
+            0.1,
+            1000.0,
         )
     }
 }

@@ -1,4 +1,6 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+
+use crate::Vec4;
 
 /// A 3-dimensional vector.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -48,6 +50,11 @@ impl Vec3 {
     pub fn normalize(self) -> Self {
         self / self.length()
     }
+
+    /// Returns `self` in homogeneous coordinates.
+    pub fn to_homogeneous(self) -> Vec4 {
+        Vec4::new(self.x, self.y, self.z, 1.0)
+    }
 }
 
 impl Add for Vec3 {
@@ -62,6 +69,14 @@ impl Add for Vec3 {
     }
 }
 
+impl AddAssign for Vec3 {
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
 impl Sub for Vec3 {
     type Output = Self;
 
@@ -71,6 +86,14 @@ impl Sub for Vec3 {
             y: self.y - rhs.y,
             z: self.z - rhs.z,
         }
+    }
+}
+
+impl SubAssign for Vec3 {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+        self.z -= rhs.z;
     }
 }
 
