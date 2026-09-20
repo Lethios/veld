@@ -1,4 +1,7 @@
-use crate::{Color, Mat4, ScreenVertex, Vec3, Vec4};
+use crate::{
+    Color, Mat4, ScreenVertex, Vec3, Vec4,
+    vertex::{ClipVertex, WorldVertex},
+};
 
 /// The projection mode used by `Camera`.
 #[derive(Debug, Clone, Copy)]
@@ -180,6 +183,13 @@ impl Camera {
         let z = ndc.z * 0.5 + 0.5;
 
         Vec3::new(x, y, z)
+    }
+
+    pub fn world_to_clip(&self, world_vec: WorldVertex, width: usize, height: usize) -> ClipVertex {
+        let view = self.world_to_view(world_vec.position);
+        let clip = self.view_to_clip(view, width, height);
+
+        ClipVertex::new(clip, world_vec.color)
     }
 
     /// Runs the full pipeline of transforming world space position into screen space coordinates.

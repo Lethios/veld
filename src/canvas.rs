@@ -1,4 +1,4 @@
-use crate::{Color, ScreenVertex};
+use crate::{Camera, Color, ScreenVertex, vertex::WorldVertex};
 
 /// A 3-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
@@ -83,7 +83,31 @@ impl Canvas {
     }
 
     /// Draws a single pixel at `point`.
-    pub fn draw_pixel(&mut self, point: ScreenVertex) {
+    pub fn draw_pixel(&mut self, camera: &Camera, point: WorldVertex) {
+        if let Some(screen) = camera.project(point.position, point.color, self.width, self.height) {
+            self.raster_pixel(screen);
+        }
+    }
+
+    /// Draws a line from `start` to `end`.
+    pub fn draw_line(&mut self, camera: &Camera, start: WorldVertex, end: WorldVertex) {
+        let start = camera.world_to_clip(start, self.width, self.height);
+        let end = camera.world_to_clip(end, self.width, self.height);
+
+        self.raster_line(start, end);
+    }
+
+    /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
+    pub fn draw_triangle(&mut self, a: WorldVertex, b: WorldVertex, c: WorldVertex) {
+        self.draw_line(a, b);
+        self.draw_line(b, c);
+        self.draw_line(c, a);
+    }
+
+    /// Draws a filled triangle with vertices `a`, `b` and `c`.
+    pub fn fill_triangle(&mut self, a: ScreenVertex, b: ScreenVertex, c: ScreenVertex) {}
+
+    fn raster_pixel(&mut self, point: ScreenVertex) {
         let (x, y, depth) = (
             point.position.x.round() as i32,
             point.position.y.round() as i32,
@@ -93,8 +117,7 @@ impl Canvas {
         self.set_pixel(x, y, depth, point.color);
     }
 
-    /// Draws a line from `start` to `end`.
-    pub fn draw_line(&mut self, start: ScreenVertex, end: ScreenVertex) {
+    fn raster_line(&mut self, start: ScreenVertex, end: ScreenVertex) {
         let (mut x1, mut y1, mut z1, mut c1) = (
             start.position.x,
             start.position.y,
@@ -140,15 +163,7 @@ impl Canvas {
         }
     }
 
-    /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
-    pub fn draw_triangle(&mut self, a: ScreenVertex, b: ScreenVertex, c: ScreenVertex) {
-        self.draw_line(a, b);
-        self.draw_line(b, c);
-        self.draw_line(c, a);
-    }
-
-    /// Draws a filled triangle with vertices `a`, `b` and `c`.
-    pub fn fill_triangle(&mut self, a: ScreenVertex, b: ScreenVertex, c: ScreenVertex) {
+    fn raster_triangle(&mut self, a: ScreenVertex, b: ScreenVertex, c: ScreenVertex) {
         const FIXED_SHIFT: i32 = 12;
         const FIXED_SCALE: f32 = (1 << FIXED_SHIFT) as f32;
         let to_fixed = |v: f32| -> i32 { (v * FIXED_SCALE).round() as i32 };
