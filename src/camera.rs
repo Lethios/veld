@@ -161,19 +161,14 @@ impl Camera {
     /// Transforms a point from clip space into normalized device coordinates (NDC).
     ///
     /// Returns `None` if the point is behind the camera or outside the NDC bounds.
-    fn clip_to_ndc(&self, clip_vec: Vec4) -> Option<(Vec3, f32)> {
+    fn clip_to_ndc(&self, clip_vec: Vec4) -> (Vec3, f32) {
         let ndc = Vec3::new(
             clip_vec.x / clip_vec.w,
             clip_vec.y / clip_vec.w,
             clip_vec.z / clip_vec.w,
         );
 
-        if ndc.x < -1.0 || ndc.x > 1.0 || ndc.y < -1.0 || ndc.y > 1.0 || ndc.z < -1.0 || ndc.z > 1.0
-        {
-            return None;
-        }
-
-        Some((ndc, clip_vec.w))
+        (ndc, clip_vec.w)
     }
 
     /// Transforms normalized device coordinates (NDC) into screen space coordinates.
@@ -192,6 +187,18 @@ impl Camera {
         ClipVertex::new(clip, world_vec.color)
     }
 
+    pub fn clip_to_screen(
+        &self,
+        clip_vec: ClipVertex,
+        width: usize,
+        height: usize,
+    ) -> ScreenVertex {
+        let (ndc, w) = self.clip_to_ndc(clip_vec.position);
+        let screen = self.ndc_to_screen(ndc, width, height);
+
+        ScreenVertex::new(screen, clip_vec.color, 1.0 / w)
+    }
+
     /// Runs the full pipeline of transforming world space position into screen space coordinates.
     pub fn project(
         &self,
@@ -202,7 +209,7 @@ impl Camera {
     ) -> Option<ScreenVertex> {
         let view = self.world_to_view(position);
         let clip = self.view_to_clip(view, width, height);
-        let (ndc, w) = self.clip_to_ndc(clip)?;
+        let (ndc, w) = self.clip_to_ndc(clip);
         let screen = self.ndc_to_screen(ndc, width, height);
 
         Some(ScreenVertex::new(screen, color, 1.0 / w))

@@ -1,4 +1,4 @@
-use crate::{Camera, Color, ScreenVertex, vertex::WorldVertex};
+use crate::{Camera, ClipVertex, Color, ScreenVertex, WorldVertex};
 
 /// A 3-dimensional drawing canvas using a Cartesian coordinate system.
 pub struct Canvas {
@@ -84,8 +84,10 @@ impl Canvas {
 
     /// Draws a single pixel at `point`.
     pub fn draw_pixel(&mut self, camera: &Camera, point: WorldVertex) {
-        if let Some(screen) = camera.project(point.position, point.color, self.width, self.height) {
-            self.raster_pixel(screen);
+        let clip = camera.world_to_clip(point, self.width, self.height);
+
+        if clip.within_plane() {
+            self.raster_pixel(camera.clip_to_screen(clip, self.width, self.height));
         }
     }
 
@@ -94,18 +96,51 @@ impl Canvas {
         let start = camera.world_to_clip(start, self.width, self.height);
         let end = camera.world_to_clip(end, self.width, self.height);
 
-        self.raster_line(start, end);
+        if let Some((start, end)) = ClipVertex::clip_line(start, end) {
+            self.raster_line(
+                camera.clip_to_screen(start, self.width, self.height),
+                camera.clip_to_screen(end, self.width, self.height),
+            );
+        }
     }
 
     /// Draws an outline of a triangle with vertices `a`, `b` and `c`.
-    pub fn draw_triangle(&mut self, a: WorldVertex, b: WorldVertex, c: WorldVertex) {
-        self.draw_line(a, b);
-        self.draw_line(b, c);
-        self.draw_line(c, a);
+    pub fn draw_triangle(
+        &mut self,
+        camera: &Camera,
+        a: WorldVertex,
+        b: WorldVertex,
+        c: WorldVertex,
+    ) {
+        self.draw_line(camera, a, b);
+        self.draw_line(camera, b, c);
+        self.draw_line(camera, c, a);
     }
 
     /// Draws a filled triangle with vertices `a`, `b` and `c`.
-    pub fn fill_triangle(&mut self, a: ScreenVertex, b: ScreenVertex, c: ScreenVertex) {}
+    pub fn fill_triangle(
+        &mut self,
+        camera: &Camera,
+        a: WorldVertex,
+        b: WorldVertex,
+        c: WorldVertex,
+    ) {
+        let clip = [a, b, c].map(|vert| camera.world_to_clip(vert, self.width, self.height));
+        let polygon_verts: Vec<ScreenVertex> = ClipVertex::clip_polygon(&clip)
+            .into_iter()
+            .map(|vert| camera.clip_to_screen(vert, self.width, self.height))
+            .collect();
+
+        let Some((first, rest)) = polygon_verts.split_first() else {
+            return;
+        };
+
+        for pair in rest.windows(2) {
+            if let [b, c] = pair {
+                self.raster_triangle(*first, *b, *c);
+            }
+        }
+    }
 
     fn raster_pixel(&mut self, point: ScreenVertex) {
         let (x, y, depth) = (
